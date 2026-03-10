@@ -45,6 +45,7 @@ export default function RamosScreen() {
   
   const [modalOpcionesRamoVisible, setModalOpcionesRamoVisible] = useState(false);
   const [ramoSeleccionado, setRamoSeleccionado] = useState<any>(null);
+  const [modalCopiarRamoVisible, setModalCopiarRamoVisible] = useState(false);
 
   const coloresDisponibles = ['#1a73e8', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
   const getColorNota = (nota: number) => nota >= 4.0 ? '#1a73e8' : '#ef4444';
@@ -380,8 +381,39 @@ export default function RamosScreen() {
           <View style={styles.opcionesContent}>
             <Text style={styles.opcionesTitulo}>{ramoSeleccionado?.ramo?.nombre}</Text>
             <TouchableOpacity style={styles.opcionItem} onPress={abrirFormularioEdicionRamo}><Ionicons name="pencil-outline" size={20} color="#334155" style={styles.opcionIcono} /><Text style={styles.opcionTexto}>Editar Ramo</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.opcionItem} onPress={() => { setModalOpcionesRamoVisible(false); setModalCopiarRamoVisible(true); }}><Ionicons name="arrow-redo-outline" size={20} color="#10b981" style={styles.opcionIcono} /><Text style={styles.opcionTexto}>Copiar a otro ciclo</Text></TouchableOpacity>
             <TouchableOpacity style={styles.opcionItem} onPress={exportarRamo}><Ionicons name="copy-outline" size={20} color="#1a73e8" style={styles.opcionIcono} /><View><Text style={styles.opcionTexto}>Duplicar Ramo</Text></View></TouchableOpacity>
             <TouchableOpacity style={[styles.opcionItem, { borderBottomWidth: 0 }]} onPress={confirmarEliminacionRamo}><Ionicons name="trash-outline" size={20} color="#ef4444" style={styles.opcionIcono} /><Text style={[styles.opcionTexto, { color: '#ef4444' }]}>Eliminar</Text></TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* MODAL: COPIAR RAMO A OTRO CICLO */}
+      <Modal animationType="fade" transparent={true} visible={modalCopiarRamoVisible} onRequestClose={() => setModalCopiarRamoVisible(false)}>
+        <TouchableOpacity style={styles.modalOverlayCentro} activeOpacity={1} onPress={() => setModalCopiarRamoVisible(false)}>
+          <View style={styles.opcionesContent}>
+            <Text style={styles.opcionesTitulo}>Copiar a otro ciclo</Text>
+            {ciclos.filter((c: any) => c.id !== ramoSeleccionado?.cicloId).length === 0 ? (
+              <Text style={{ textAlign: 'center', color: '#64748b', marginVertical: 10 }}>No hay otros ciclos disponibles.</Text>
+            ) : (
+              ciclos.filter((c: any) => c.id !== ramoSeleccionado?.cicloId).map((cicloDestino: any) => (
+                <TouchableOpacity key={cicloDestino.id} style={styles.opcionItem} onPress={() => {
+                    if (ramoSeleccionado) {
+                      agregarRamo(cicloDestino.id, { ...ramoSeleccionado.ramo, id: Math.random().toString(), promedio: 0.0 });
+                      setModalCopiarRamoVisible(false);
+                      Alert.alert('Copiado', `El ramo ha sido copiado a ${cicloDestino.semestre} ${cicloDestino.año}.`);
+                    }
+                }}>
+                  <Ionicons name="calendar-outline" size={20} color="#334155" style={styles.opcionIcono} />
+                  <View>
+                    <Text style={styles.opcionTexto}>{cicloDestino.semestre} {cicloDestino.año}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            )}
+            <TouchableOpacity style={[styles.opcionItem, { borderBottomWidth: 0, justifyContent: 'center', marginTop: 10 }]} onPress={() => setModalCopiarRamoVisible(false)}>
+              <Text style={{ color: '#64748b', fontWeight: 'bold' }}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
