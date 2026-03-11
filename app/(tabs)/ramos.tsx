@@ -128,12 +128,17 @@ export default function RamosScreen() {
     setModalVisible(true);
   };
 
-  const exportarRamo = () => {
+  const abrirFormularioEdicionRamo = () => {
     if (!ramoSeleccionado) return;
-    const ramoDuplicado = { ...ramoSeleccionado.ramo, id: Math.random().toString(), nombre: `${ramoSeleccionado.ramo.nombre} (Copia)`, promedio: 0.0 };
-    agregarRamo(ramoSeleccionado.cicloId, ramoDuplicado); 
+    setCicloDestinoId(ramoSeleccionado.cicloId);
+    setRamoAEditarId(ramoSeleccionado.ramo.id);
+    setNuevoNombre(ramoSeleccionado.ramo.nombre);
+    setNuevoProfesor(ramoSeleccionado.ramo.profesor === 'Sin asignar' ? '' : ramoSeleccionado.ramo.profesor);
+    setNuevaSala(ramoSeleccionado.ramo.sala === 'Por definir' ? '' : ramoSeleccionado.ramo.sala);
+    setNuevoColor(ramoSeleccionado.ramo.colorHex);
+    setEtiquetasRamo([...ramoSeleccionado.ramo.etiquetas]);
     setModalOpcionesRamoVisible(false);
-    Alert.alert('Exportado', 'El ramo ha sido duplicado en este mismo ciclo.');
+    setModalVisible(true);
   };
 
   const guardarRamo = () => {
@@ -392,7 +397,6 @@ export default function RamosScreen() {
             <Text style={styles.opcionesTitulo}>{ramoSeleccionado?.ramo?.nombre}</Text>
             <TouchableOpacity style={styles.opcionItem} onPress={abrirFormularioEdicionRamo}><Ionicons name="pencil-outline" size={20} color="#334155" style={styles.opcionIcono} /><Text style={styles.opcionTexto}>Editar Ramo</Text></TouchableOpacity>
             <TouchableOpacity style={styles.opcionItem} onPress={() => { setModalOpcionesRamoVisible(false); setModalCopiarRamoVisible(true); }}><Ionicons name="arrow-redo-outline" size={20} color="#10b981" style={styles.opcionIcono} /><Text style={styles.opcionTexto}>Copiar a otro ciclo</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.opcionItem} onPress={exportarRamo}><Ionicons name="copy-outline" size={20} color="#1a73e8" style={styles.opcionIcono} /><View><Text style={styles.opcionTexto}>Duplicar Ramo</Text></View></TouchableOpacity>
             <TouchableOpacity style={[styles.opcionItem, { borderBottomWidth: 0 }]} onPress={confirmarEliminacionRamo}><Ionicons name="trash-outline" size={20} color="#ef4444" style={styles.opcionIcono} /><Text style={[styles.opcionTexto, { color: '#ef4444' }]}>Eliminar</Text></TouchableOpacity>
           </View>
         </TouchableOpacity>
