@@ -10,6 +10,22 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   // NUEVO: Memoria global del horario
   const [bloquesHorario, setBloquesHorario] = useState<any[]>([]);
 
+  // NUEVO: Memoria global de apuntes
+  // Estructura: { id, ramoId (id or 'general'), titulo, contenido, fecha }
+  const [apuntesGlobales, setApuntesGlobales] = useState<any[]>([]);
+
+  const agregarApunte = (nuevoApunte: any) => {
+    setApuntesGlobales([nuevoApunte, ...apuntesGlobales]);
+  };
+
+  const eliminarApunte = (id: string) => {
+    setApuntesGlobales(apuntesGlobales.filter(a => a.id !== id));
+  };
+
+  const actualizarApunte = (id: string, datosActualizados: any) => {
+    setApuntesGlobales(apuntesGlobales.map(a => a.id === id ? { ...a, ...datosActualizados } : a));
+  };
+
   const crearCiclo = (año: string, semestre: string) => {
     const nuevosCiclos = ciclos.map(c => ({ ...c, activo: false }));
     nuevosCiclos.unshift({ id: Math.random().toString(), año, semestre, activo: true, ramos: [] });
@@ -382,7 +398,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       guardarSubcategoria, eliminarSubcategoria, agregarNotaSubcategoria, eliminarNotaSubcategoria, actualizarNotaSubcategoria,
       ramosGlobales, cicloActivo,
       actividadesGlobales, agregarActividadGlobal,
-      bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles
+      bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles,
+      calcularPromedioRamo,
+      apuntesGlobales, agregarApunte, eliminarApunte, actualizarApunte
     }}>
       {children}
     </AppContext.Provider>

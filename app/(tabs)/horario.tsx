@@ -8,7 +8,14 @@ import { useAppContext } from '../../context/AppContext';
 export default function HorarioScreen() {
   const router = useRouter();
   const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-  const [diaActivo, setDiaActivo] = useState('Lun');
+  const obtenerDiaActual = () => {
+    const jsDay = new Date().getDay(); // 0 = Dom, 1 = Lun, 2 = Mar...
+    // Mapear al arreglo: Dom (0) -> indice 6. Los demás jsDay - 1
+    const indice = jsDay === 0 ? 6 : jsDay - 1;
+    return diasSemana[indice];
+  };
+
+  const [diaActivo, setDiaActivo] = useState(obtenerDiaActual());
 
   const { 
     ramosGlobales, actividadesGlobales, agregarActividadGlobal, 

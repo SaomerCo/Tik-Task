@@ -650,17 +650,31 @@ export default function RamosScreen() {
                                    <Text style={{ color: '#475569', fontWeight: 'bold' }}>Simular notas para aprobar</Text>
                                </TouchableOpacity>
                             ) : (
-                               <TouchableOpacity 
-                                   style={{ backgroundColor: '#fee2e2', paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#fca5a5', flexDirection: 'row', justifyContent: 'center', gap: 6 }} 
-                                   onPress={() => { setIsSimulando(false); setNotaSimulada(null); }}
-                               >
-                                   <Ionicons name="close-circle-outline" size={18} color="#ef4444" />
-                                   <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Salir de la simulación (Req: {notaSimulada?.toFixed(1)})</Text>
-                               </TouchableOpacity>
+                               <View>
+                                   <TouchableOpacity 
+                                       style={{ backgroundColor: '#fee2e2', paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#fca5a5', flexDirection: 'row', justifyContent: 'center', gap: 6 }} 
+                                       onPress={() => { setIsSimulando(false); setNotaSimulada(null); }}
+                                   >
+                                       <Ionicons name="close-circle-outline" size={18} color="#ef4444" />
+                                       <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Salir de la simulación (Req: {notaSimulada?.toFixed(1)})</Text>
+                                   </TouchableOpacity>
+                                   {notaSimulada !== null && (
+                                       <Text style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginTop: 8 }}>
+                                           Si obtienes un <Text style={{ fontWeight: 'bold', color: '#0f172a' }}>{notaSimulada.toFixed(1)}</Text> en tus notas pendientes, pasarás este ramo con promedio de 3.95.
+                                       </Text>
+                                   )}
+                               </View>
                             )}
                         </View>
 
                         <Text style={styles.label}>Categorías de Evaluación</Text>
+
+                        <View style={{ flexDirection: 'row', backgroundColor: '#f0fdf4', padding: 12, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#bbf7d0', alignItems: 'center' }}>
+                            <Ionicons name="information-circle" size={20} color="#16a34a" style={{ marginRight: 10 }} />
+                            <Text style={{ flex: 1, color: '#15803d', fontSize: 13, lineHeight: 18 }}>
+                                <Text style={{ fontWeight: 'bold' }}>Tip:</Text> Si dejas el campo <Text style={{fontWeight: 'bold'}}>%</Text> vacío al crear notas o categorías, el sistema calculará un promedio parejo de forma automática.
+                            </Text>
+                        </View>
                         
                         {/* LISTA DE CATEGORÍAS */}
                         {categoriasAct.map((cat: any) => {
@@ -710,7 +724,7 @@ export default function RamosScreen() {
                                         <Text style={{fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 6}}>Añadir Subcategoría a {cat.nombre}</Text>
                                         <View style={{flexDirection: 'row', gap: 5}}>
                                             <TextInput style={[styles.input, {flex: 2, paddingVertical: 8, marginBottom: 0, fontSize: 13}]} placeholder="Ej. Prueba" value={nuevaSubcategoriaNombre} onChangeText={setNuevaSubcategoriaNombre} />
-                                            <TextInput style={[styles.input, {flex: 1, paddingVertical: 8, marginBottom: 0, fontSize: 13}]} placeholder="%" keyboardType="numeric" value={nuevaSubcategoriaPorcentaje} onChangeText={setNuevaSubcategoriaPorcentaje} />
+                                            <TextInput style={[styles.input, {flex: 1, paddingVertical: 8, marginBottom: 0, fontSize: 13}]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaSubcategoriaPorcentaje} onChangeText={setNuevaSubcategoriaPorcentaje} />
                                             <TouchableOpacity style={{ backgroundColor: '#1a73e8', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
                                                 const porc = parseFloat(nuevaSubcategoriaPorcentaje);
                                                 if (!nuevaSubcategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido.');
@@ -770,11 +784,11 @@ export default function RamosScreen() {
                                             {(sub.notas || []).map((nota: any) => (
                                                 <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 4 }}>
                                                     {editandoNotaId === nota.id ? (
-                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
-                                                            <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
-                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="%" keyboardType="numeric" />
-                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
-                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, height: '100%' }} onPress={() => {
+                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                            <TextInput style={[styles.input, {minWidth: 80, maxWidth: 120, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 8, fontSize: 13}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
+                                                            <TextInput style={[styles.input, {minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center'}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="% (Opc.)" keyboardType="numeric" />
+                                                            <TextInput style={[styles.input, {minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center'}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
+                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, paddingVertical: 6 }} onPress={() => {
                                                                 const valText = editNotaValor.trim();
                                                                 const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
                                                                 const porc = editNotaPorc.trim() ? parseFloat(editNotaPorc.replace(',','.')) : undefined;
@@ -811,7 +825,7 @@ export default function RamosScreen() {
                                                     <View style={{ flexDirection: 'row', gap: 5, marginTop: 5 }}>
                                                     <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="Desc." value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
                                                     <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
-                                                    <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="%" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                                    <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
                                                     <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
                                                         const valText = nuevaNotaValor.trim();
                                                         const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
@@ -853,11 +867,11 @@ export default function RamosScreen() {
                                             cat.notas.map((nota: any) => (
                                                 <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, marginBottom: 6 }}>
                                                     {editandoNotaId === nota.id ? (
-                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
-                                                            <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 10}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
-                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="%" keyboardType="numeric" />
-                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
-                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, height: '100%' }} onPress={() => {
+                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                                                            <TextInput style={[styles.input, {minWidth: 80, maxWidth: 120, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 8, fontSize: 13}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
+                                                            <TextInput style={[styles.input, {minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center'}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
+                                                            <TextInput style={[styles.input, {minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center'}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="% (Opc.)" keyboardType="numeric" />
+                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, paddingVertical: 6 }} onPress={() => {
                                                                 const valText = editNotaValor.trim();
                                                                 const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
                                                                 const porc = editNotaPorc.trim() ? parseFloat(editNotaPorc.replace(',','.')) : undefined;
@@ -897,7 +911,7 @@ export default function RamosScreen() {
                                                 <View style={{ flexDirection: 'row', gap: 5, marginTop: 10 }}>
                                                 <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 10}]} placeholder="Descripción (Ej. Prueba)" value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
                                                 <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
-                                                <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} placeholder="%" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                                <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
                                                 <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 15, borderRadius: 10 }} onPress={() => {
                                                     const valText = nuevaNotaValor.trim();
                                                     const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
@@ -927,7 +941,7 @@ export default function RamosScreen() {
                             <Text style={{fontSize: 14, fontWeight: 'bold', color: '#1e40af', marginBottom: 10}}>Nueva Categoría</Text>
                             <View style={{flexDirection: 'row', gap: 10}}>
                                 <TextInput style={[styles.input, {flex: 2, backgroundColor: 'white', marginBottom: 0}]} placeholder="Nombre (Ej. Laboratorio)" value={nuevaCategoriaNombre} onChangeText={setNuevaCategoriaNombre} />
-                                <TextInput style={[styles.input, {flex: 1, backgroundColor: 'white', marginBottom: 0}]} placeholder="%" keyboardType="numeric" value={nuevaCategoriaPorcentaje} onChangeText={setNuevaCategoriaPorcentaje} />
+                                <TextInput style={[styles.input, {flex: 1, backgroundColor: 'white', marginBottom: 0}]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaCategoriaPorcentaje} onChangeText={setNuevaCategoriaPorcentaje} />
                             </View>
                             <TouchableOpacity style={{ backgroundColor: '#1a73e8', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 10 }} onPress={() => {
                                 const porc = parseFloat(nuevaCategoriaPorcentaje);
