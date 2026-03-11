@@ -13,7 +13,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export default function RamosScreen() {
   const { 
     ciclos, crearCiclo, editarCiclo, eliminarCiclo, toggleCicloActivo,
-    agregarRamo, actualizarRamo, eliminarRamo 
+    agregarRamo, actualizarRamo, eliminarRamo,
+    guardarCategoria, eliminarCategoria, agregarNota, eliminarNota, actualizarNota,
+    guardarSubcategoria, eliminarSubcategoria, agregarNotaSubcategoria, eliminarNotaSubcategoria, actualizarNotaSubcategoria,
+    calcularPromedioRamo
   } = useAppContext();
 
   const añoCalculado = new Date().getFullYear();
@@ -47,8 +50,137 @@ export default function RamosScreen() {
   const [ramoSeleccionado, setRamoSeleccionado] = useState<any>(null);
   const [modalCopiarRamoVisible, setModalCopiarRamoVisible] = useState(false);
 
+  // --- ESTADOS DE NOTAS ---
+  const [modalNotasVisible, setModalNotasVisible] = useState(false);
+  const [ramoParaNotas, setRamoParaNotas] = useState<any>(null); // { cicloId, ramo }
+  
+  const [nuevaCategoriaNombre, setNuevaCategoriaNombre] = useState('');
+  const [nuevaCategoriaPorcentaje, setNuevaCategoriaPorcentaje] = useState('');
+  const [categoriaSeleccionadaId, setCategoriaSeleccionadaId] = useState<string | null>(null);
+  
+  const [nuevaSubcategoriaNombre, setNuevaSubcategoriaNombre] = useState('');
+  const [nuevaSubcategoriaPorcentaje, setNuevaSubcategoriaPorcentaje] = useState('');
+  const [creandoSubParaCatId, setCreandoSubParaCatId] = useState<string | null>(null);
+
+  const [nuevaNotaValor, setNuevaNotaValor] = useState('');
+  const [nuevaNotaDesc, setNuevaNotaDesc] = useState('');
+  const [nuevaNotaPorcentaje, setNuevaNotaPorcentaje] = useState('');
+  const [subcategoriaSeleccionadaId, setSubcategoriaSeleccionadaId] = useState<string | null>(null);
+
+  const [editandoNotaId, setEditandoNotaId] = useState<string | null>(null);
+  const [editNotaDesc, setEditNotaDesc] = useState('');
+  const [editNotaValor, setEditNotaValor] = useState('');
+  const [editNotaPorc, setEditNotaPorc] = useState('');
+
+  const iniciarEdicionNota = (nota: any) => {
+    setEditandoNotaId(nota.id);
+    setEditNotaDesc(nota.descripcion || '');
+    setEditNotaValor(nota.valor != null ? nota.valor.toString() : '');
+    setEditNotaPorc(nota.porcentaje ? nota.porcentaje.toString() : '');
+  };
+
+  const [editandoCategoriaConfigId, setEditandoCategoriaConfigId] = useState<string | null>(null);
+  const [editCatConfigNombre, setEditCatConfigNombre] = useState('');
+  const [editCatConfigPorc, setEditCatConfigPorc] = useState('');
+
+  const [editandoSubcatConfigId, setEditandoSubcatConfigId] = useState<string | null>(null);
+  const [editSubcatConfigNombre, setEditSubcatConfigNombre] = useState('');
+  const [editSubcatConfigPorc, setEditSubcatConfigPorc] = useState('');
+
+  const [isSimulando, setIsSimulando] = useState(false);
+  const [notaSimulada, setNotaSimulada] = useState<number | null>(null);
+
   const coloresDisponibles = ['#1a73e8', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#ef4444'];
   const getColorNota = (nota: number) => nota >= 4.0 ? '#1a73e8' : '#ef4444';
+
+  const formatPromedio = (prom: number) => {
+    const fixed = prom.toFixed(2);
+    return fixed.endsWith('0') ? prom.toFixed(1) : fixed;
+  };
+
+  const simularNotasVacias = (categorias: any, notaBuscada: number) => {
+    // Clonación profunda
+    const clonarArr = (arr: any) => JSON.parse(JSON.stringify(arr));
+
+    // Determina si hay notas vacías que reemplazar
+    let tieneVacias = false;
+    const revisarVacias = (cats: any) => {
+        cats.forEach((cat: any) => {
+            if (cat.subcategorias && cat.subcategorias.length > 0) {
+                cat.subcategorias.forEach((sub: any) => {
+                    const notas = sub.notas || [];
+                    if (notas.some((n: any) => n.valor == null)) tieneVacias = true;
+                });
+            } else {
+                const notas = cat.notas || [];
+                if (notas.some((n: any) => n.valor == null)) tieneVacias = true;
+            }
+        });
+    };
+    
+    revisarVacias(categorias);
+    if (!tieneVacias) return null; // No hay donde simular
+
+    let low = 1.0;
+    let high = 7.0;
+    let result = null;
+
+    // Búsqueda Binaria de la nota faltante
+    for (let i = 0; i < 20; i++) { // ~20 iteraciones son más que suficientes para precisión decimal
+        const mid = (low + high) / 2;
+        const testCategorias = clonarArr(categorias);
+
+        // Rellenar notas nulas con 'mid'
+        testCategorias.forEach((cat: any) => {
+            if (cat.subcategorias && cat.subcategorias.length > 0) {
+                cat.subcategorias.forEach((sub: any) => {
+                    (sub.notas || []).forEach((n: any) => { if (n.valor == null) n.valor = mid; });
+                });
+            } else {
+                (cat.notas || []).forEach((n: any) => { if (n.valor == null) n.valor = mid; });
+            }
+        });
+
+        const promActual = calcularPromedioRamo(testCategorias);
+
+        if (promActual >= 3.945) { // Aproximación segura para 3.95
+            result = mid;
+            high = mid; // Buscamos nota más baja posible
+        } else {
+            low = mid;
+        }
+    }
+
+    // Comprobar si incluso con 7.0 no es posible
+    const maximasCat = clonarArr(categorias);
+    maximasCat.forEach((cat: any) => {
+        if (cat.subcategorias && cat.subcategorias.length > 0) {
+            cat.subcategorias.forEach((sub: any) => {
+                (sub.notas || []).forEach((n: any) => { if (n.valor == null) n.valor = 7.0; });
+            });
+        } else {
+            (cat.notas || []).forEach((n: any) => { if (n.valor == null) n.valor = 7.0; });
+        }
+    });
+    
+    if (calcularPromedioRamo(maximasCat) < 3.945) {
+        return -1; // Imposible
+    }
+
+    return result != null ? parseFloat(result.toFixed(1)) : null;
+  };
+
+  const activarSimulacion = (categorias: any) => {
+      const requerida = simularNotasVacias(categorias, 3.95);
+      if (requerida === null) {
+          Alert.alert('Aviso', 'No hay notas vacías para simular.');
+      } else if (requerida === -1) {
+          Alert.alert('Imposible', 'Matemáticamente no te alcanza para aprobar incluso sacando nota 7.0 en lo restante.');
+      } else {
+          setNotaSimulada(requerida);
+          setIsSimulando(true);
+      }
+  };
 
   const toggleExpandir = (id: string) => {
     setCiclosExpandidos(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }));
@@ -112,19 +244,6 @@ export default function RamosScreen() {
     setRamoAEditarId(null);
     setNuevoNombre(''); setNuevoProfesor(''); setNuevaSala(''); 
     setNuevoColor('#1a73e8'); setEtiquetasRamo([]); setTextoEtiqueta('');
-    setModalVisible(true);
-  };
-
-  const abrirFormularioEdicionRamo = () => {
-    if (!ramoSeleccionado) return;
-    setCicloDestinoId(ramoSeleccionado.cicloId);
-    setRamoAEditarId(ramoSeleccionado.ramo.id);
-    setNuevoNombre(ramoSeleccionado.ramo.nombre);
-    setNuevoProfesor(ramoSeleccionado.ramo.profesor === 'Sin asignar' ? '' : ramoSeleccionado.ramo.profesor);
-    setNuevaSala(ramoSeleccionado.ramo.sala === 'Por definir' ? '' : ramoSeleccionado.ramo.sala);
-    setNuevoColor(ramoSeleccionado.ramo.colorHex);
-    setEtiquetasRamo([...ramoSeleccionado.ramo.etiquetas]);
-    setModalOpcionesRamoVisible(false);
     setModalVisible(true);
   };
 
@@ -302,14 +421,20 @@ export default function RamosScreen() {
                         </View>
                       )}
                       <View style={styles.iconosAccion}>
-                        <View style={styles.miniBoton}><Ionicons name="calculator-outline" size={14} color="#64748b" /><Text style={styles.miniBotonTexto}>Notas</Text></View>
+                        <TouchableOpacity style={styles.miniBoton} onPress={() => {
+                          setRamoParaNotas({ cicloId: ciclo.id, ramo });
+                          setModalNotasVisible(true);
+                        }}>
+                          <Ionicons name="calculator-outline" size={14} color="#64748b" />
+                          <Text style={styles.miniBotonTexto}>Notas</Text>
+                        </TouchableOpacity>
                         <View style={styles.miniBoton}><Ionicons name="document-text-outline" size={14} color="#64748b" /><Text style={styles.miniBotonTexto}>Apuntes</Text></View>
                       </View>
                     </View>
                     <View style={styles.promedioWrapper}>
                       <Text style={styles.labelPromedio}>Promedio</Text>
                       <View style={[styles.circuloNota, { borderColor: ramo.promedio === 0 ? '#cbd5e1' : getColorNota(ramo.promedio) }]}>
-                        <Text style={[styles.notaTexto, { color: ramo.promedio === 0 ? '#94a3b8' : getColorNota(ramo.promedio) }]}>{ramo.promedio === 0 ? '-' : ramo.promedio.toFixed(1)}</Text>
+                        <Text style={[styles.notaTexto, { color: ramo.promedio === 0 ? '#94a3b8' : getColorNota(ramo.promedio) }]}>{ramo.promedio === 0 ? '-' : formatPromedio(ramo.promedio)}</Text>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -475,6 +600,349 @@ export default function RamosScreen() {
               </View>
               <View style={{height: 20}} />
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL: GESTIÓN DE NOTAS */}
+      <Modal animationType="slide" transparent={true} visible={modalNotasVisible} onRequestClose={() => setModalNotasVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { height: '85%' }]}>
+            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15}}>
+                <Text style={styles.modalTitulo} numberOfLines={1}>{ramoParaNotas?.ramo?.nombre || 'Notas'}</Text>
+                <TouchableOpacity onPress={() => setModalNotasVisible(false)}><Ionicons name="close-circle" size={28} color="#94a3b8" /></TouchableOpacity>
+            </View>
+
+            {/* Calcular datos actuales para la vista en vivo */}
+            {(() => {
+                if (!ramoParaNotas) return null;
+                // Buscar el ramo real en el estado de ciclos para tener la información más actual
+                const cicloBusqueda = ciclos.find((c:any) => c.id === ramoParaNotas.cicloId);
+                const ramoAct = cicloBusqueda?.ramos?.find((r:any) => r.id === ramoParaNotas.ramo.id);
+                if (!ramoAct) return null;
+
+                const categoriasAct = ramoAct.categorias || [];
+                const porcentajeTotal = categoriasAct.reduce((acc: number, cat: any) => acc + cat.porcentaje, 0);
+
+                return (
+                    <ScrollView showsVerticalScrollIndicator={false}>
+                        {/* HEADER DE PROMEDIO */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 15, borderWidth: 1, borderColor: '#e2e8f0' }}>
+                           <View style={{flex: 1}}>
+                               <Text style={{fontSize: 14, color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase'}}>Promedio Actual</Text>
+                               {porcentajeTotal !== 100 && (
+                                   <Text style={{fontSize: 12, color: '#f59e0b', marginTop: 4}}><Ionicons name="warning" size={12} /> Las categorías principales suman {porcentajeTotal}%</Text>
+                               )}
+                           </View>
+                           <View style={[styles.circuloNota, { borderColor: ramoAct.promedio === 0 ? '#cbd5e1' : getColorNota(ramoAct.promedio) }]}>
+                             <Text style={[styles.notaTexto, { color: ramoAct.promedio === 0 ? '#94a3b8' : getColorNota(ramoAct.promedio) }]}>{ramoAct.promedio === 0 ? '-' : formatPromedio(ramoAct.promedio)}</Text>
+                           </View>
+                        </View>
+
+                        {/* BOTON DE SIMULAR */}
+                        <View style={{ marginBottom: 15, paddingHorizontal: 5 }}>
+                            {!isSimulando ? (
+                               <TouchableOpacity 
+                                   style={{ backgroundColor: '#f1f5f9', paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', flexDirection: 'row', justifyContent: 'center', gap: 6 }} 
+                                   onPress={() => activarSimulacion(ramoAct.categorias || [])}
+                               >
+                                   <Ionicons name="calculator-outline" size={18} color="#475569" />
+                                   <Text style={{ color: '#475569', fontWeight: 'bold' }}>Simular notas para aprobar</Text>
+                               </TouchableOpacity>
+                            ) : (
+                               <TouchableOpacity 
+                                   style={{ backgroundColor: '#fee2e2', paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#fca5a5', flexDirection: 'row', justifyContent: 'center', gap: 6 }} 
+                                   onPress={() => { setIsSimulando(false); setNotaSimulada(null); }}
+                               >
+                                   <Ionicons name="close-circle-outline" size={18} color="#ef4444" />
+                                   <Text style={{ color: '#ef4444', fontWeight: 'bold' }}>Salir de la simulación (Req: {notaSimulada?.toFixed(1)})</Text>
+                               </TouchableOpacity>
+                            )}
+                        </View>
+
+                        <Text style={styles.label}>Categorías de Evaluación</Text>
+                        
+                        {/* LISTA DE CATEGORÍAS */}
+                        {categoriasAct.map((cat: any) => {
+                            const hasSubcats = cat.subcategorias && cat.subcategorias.length > 0;
+                            const totalPorcSubcats = hasSubcats ? cat.subcategorias.reduce((acc: number, sub: any) => acc + sub.porcentaje, 0) : 0;
+
+                            return (
+                            <View key={cat.id} style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 15, marginBottom: 15 }}>
+                                <View style={{ borderBottomWidth: 1, borderBottomColor: '#f1f5f9', paddingBottom: 10, marginBottom: 10 }}>
+                                    {editandoCategoriaConfigId === cat.id ? (
+                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+                                            <TextInput style={[styles.input, {flex: 2, marginBottom: 0}]} value={editCatConfigNombre} onChangeText={setEditCatConfigNombre} />
+                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0}]} value={editCatConfigPorc} keyboardType="numeric" onChangeText={setEditCatConfigPorc} />
+                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 15, borderRadius: 8, height: 40 }} onPress={() => {
+                                                const porc = parseFloat(editCatConfigPorc.replace(',','.'));
+                                                if (!editCatConfigNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Datos inválidos');
+                                                guardarCategoria(ramoParaNotas.cicloId, ramoAct.id, { ...cat, nombre: editCatConfigNombre, porcentaje: porc });
+                                                setEditandoCategoriaConfigId(null);
+                                            }}>
+                                                <Ionicons name="checkmark" size={20} color="white" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <TouchableOpacity style={{ flex: 1 }} onPress={() => { setEditandoCategoriaConfigId(cat.id); setEditCatConfigNombre(cat.nombre); setEditCatConfigPorc(cat.porcentaje.toString()); }}>
+                                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#334155' }}>{cat.nombre}</Text>
+                                                <Text style={{ fontSize: 13, color: '#64748b' }}>Ponderación General: {cat.porcentaje}%</Text>
+                                                {hasSubcats && totalPorcSubcats !== 100 && (
+                                                    <Text style={{fontSize: 12, color: '#f59e0b', marginTop: 2}}><Ionicons name="warning" size={12} /> Subcategorías suman {totalPorcSubcats}%</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                            <View style={{flexDirection: 'row'}}>
+                                                <TouchableOpacity style={{marginRight: 15}} onPress={() => setCreandoSubParaCatId(cat.id)}>
+                                                    <Ionicons name="folder-open-outline" size={20} color="#1a73e8" />
+                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => eliminarCategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id)}>
+                                                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+                                
+                                {/* FORMULARIO NUEVA SUBCATEGORÍA INTERNO */}
+                                {creandoSubParaCatId === cat.id && (
+                                    <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8, marginBottom: 15 }}>
+                                        <Text style={{fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 6}}>Añadir Subcategoría a {cat.nombre}</Text>
+                                        <View style={{flexDirection: 'row', gap: 5}}>
+                                            <TextInput style={[styles.input, {flex: 2, paddingVertical: 8, marginBottom: 0, fontSize: 13}]} placeholder="Ej. Prueba" value={nuevaSubcategoriaNombre} onChangeText={setNuevaSubcategoriaNombre} />
+                                            <TextInput style={[styles.input, {flex: 1, paddingVertical: 8, marginBottom: 0, fontSize: 13}]} placeholder="%" keyboardType="numeric" value={nuevaSubcategoriaPorcentaje} onChangeText={setNuevaSubcategoriaPorcentaje} />
+                                            <TouchableOpacity style={{ backgroundColor: '#1a73e8', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
+                                                const porc = parseFloat(nuevaSubcategoriaPorcentaje);
+                                                if (!nuevaSubcategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido.');
+                                                guardarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, { id: Math.random().toString(), nombre: nuevaSubcategoriaNombre, porcentaje: porc, notas: [] });
+                                                setNuevaSubcategoriaNombre(''); setNuevaSubcategoriaPorcentaje(''); setCreandoSubParaCatId(null);
+                                            }}>
+                                                <Ionicons name="checkmark" size={16} color="white" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={{ justifyContent: 'center', paddingHorizontal: 5 }} onPress={() => setCreandoSubParaCatId(null)}>
+                                                <Ionicons name="close" size={20} color="#64748b" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                )}
+
+                                {/* RENDER SUBCATEGORÍAS */}
+                                {hasSubcats ? (
+                                    cat.subcategorias.map((sub: any) => {
+                                        const subNotasSum = (sub.notas || []).reduce((acc: number, n: any) => acc + (n.porcentaje || 0), 0);
+                                        const tienePorcentajesSub = (sub.notas || []).some((n: any) => n.porcentaje !== undefined);
+                                        const tieneNotasSinPorcentaje = (sub.notas || []).some((n: any) => n.porcentaje === undefined);
+
+                                        return (
+                                        <View key={sub.id} style={{ marginLeft: 15, borderLeftWidth: 2, borderLeftColor: '#e2e8f0', paddingLeft: 10, marginBottom: 15 }}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+                                                {editandoSubcatConfigId === sub.id ? (
+                                                    <View style={{ flexDirection: 'row', gap: 5, flex: 1, marginRight: 10 }}>
+                                                        <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 4, fontSize: 13}]} value={editSubcatConfigNombre} onChangeText={setEditSubcatConfigNombre} />
+                                                        <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 4, fontSize: 13}]} value={editSubcatConfigPorc} keyboardType="numeric" onChangeText={setEditSubcatConfigPorc} />
+                                                        <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 10, borderRadius: 6 }} onPress={() => {
+                                                            const porc = parseFloat(editSubcatConfigPorc.replace(',','.'));
+                                                            if (!editSubcatConfigNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Datos inválidos');
+                                                            guardarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, { ...sub, nombre: editSubcatConfigNombre, porcentaje: porc });
+                                                            setEditandoSubcatConfigId(null);
+                                                        }}>
+                                                            <Ionicons name="checkmark" size={16} color="white" />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                ) : (
+                                                    <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between' }}>
+                                                        <View style={{ flex: 1 }}>
+                                                            <TouchableOpacity onPress={() => { setEditandoSubcatConfigId(sub.id); setEditSubcatConfigNombre(sub.nombre); setEditSubcatConfigPorc(sub.porcentaje.toString()); }}>
+                                                                <Text style={{ fontWeight: '600', color: '#475569', fontSize: 14 }}>{sub.nombre} ({sub.porcentaje}%)</Text>
+                                                            </TouchableOpacity>
+                                                            {tienePorcentajesSub && subNotasSum !== 100 && !tieneNotasSinPorcentaje && (
+                                                                <Text style={{fontSize: 11, color: '#f59e0b'}}><Ionicons name="warning" size={11} /> Notas suman {subNotasSum}%</Text>
+                                                            )}
+                                                        </View>
+                                                        <TouchableOpacity onPress={() => eliminarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id)}>
+                                                            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            
+                                            {/* NOTAS DE LA SUBCATEGORÍA */}
+                                            {(sub.notas || []).map((nota: any) => (
+                                                <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 4 }}>
+                                                    {editandoNotaId === nota.id ? (
+                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+                                                            <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
+                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="%" keyboardType="numeric" />
+                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
+                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, height: '100%' }} onPress={() => {
+                                                                const valText = editNotaValor.trim();
+                                                                const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
+                                                                const porc = editNotaPorc.trim() ? parseFloat(editNotaPorc.replace(',','.')) : undefined;
+                                                                if (val !== null && (isNaN(val) || val < 1 || val > 7)) return Alert.alert('Error', 'Nota inválida');
+                                                                if (porc !== undefined && (isNaN(porc) || porc <= 0 || porc > 100)) return Alert.alert('Error', 'Porcentaje inválido');
+                                                                actualizarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, nota.id, { ...nota, valor: val, descripcion: editNotaDesc, porcentaje: porc });
+                                                                setEditandoNotaId(null);
+                                                            }}>
+                                                                <Ionicons name="checkmark" size={16} color="white" />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    ) : (
+                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <TouchableOpacity style={{ flex: 1, flexDirection: 'row' }} onPress={() => iniciarEdicionNota(nota)}>
+                                                                <Text style={{ flex: 1, color: '#64748b', fontSize: 13 }}>
+                                                                    {nota.descripcion || 'Sin descripción'}
+                                                                    {nota.porcentaje ? ` (${nota.porcentaje}%)` : ''}
+                                                                </Text>
+                                                                <Text style={{ fontWeight: 'bold', fontSize: 14, color: nota.valor != null ? getColorNota(nota.valor) : (isSimulando && notaSimulada ? '#94a3b8' : '#94a3b8'), marginRight: 10, fontStyle: isSimulando && nota.valor == null ? 'italic' : 'normal' }}>
+                                                                    {nota.valor != null ? nota.valor.toFixed(1) : (isSimulando && notaSimulada ? notaSimulada.toFixed(1) : '-')}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => !isSimulando && eliminarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, nota.id)}>
+                                                                <Ionicons name="trash-outline" size={18} color={isSimulando ? "#cbd5e1" : "#94a3b8"} />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            ))}
+
+                                            {/* AÑADIR NOTA A SUBCATEGORÍA */}
+                                            {!isSimulando && (
+                                                subcategoriaSeleccionadaId === sub.id ? (
+                                                    <View style={{ flexDirection: 'row', gap: 5, marginTop: 5 }}>
+                                                    <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="Desc." value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
+                                                    <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
+                                                    <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13}]} placeholder="%" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                                    <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
+                                                        const valText = nuevaNotaValor.trim();
+                                                        const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
+                                                        const porc = nuevaNotaPorcentaje.trim() ? parseFloat(nuevaNotaPorcentaje.replace(',','.')) : undefined;
+                                                        if (val !== null && (isNaN(val) || val < 1 || val > 7)) return Alert.alert('Error', 'Ingresa una nota válida (entre 1.0 y 7.0)');
+                                                        if (porc !== undefined && (isNaN(porc) || porc <= 0 || porc > 100)) return Alert.alert('Error', 'Porcentaje inválido.');
+                                                        agregarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, { id: Math.random().toString(), valor: val, descripcion: nuevaNotaDesc, porcentaje: porc });
+                                                        setNuevaNotaValor(''); setNuevaNotaDesc(''); setNuevaNotaPorcentaje(''); setSubcategoriaSeleccionadaId(null);
+                                                    }}>
+                                                        <Ionicons name="add" size={16} color="white" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            ) : (
+                                                <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingVertical: 4 }} onPress={() => { setSubcategoriaSeleccionadaId(sub.id); setCategoriaSeleccionadaId(null); }}>
+                                                    <Ionicons name="add" size={14} color="#1a73e8" />
+                                                </TouchableOpacity>
+                                                )
+                                            )}
+                                        </View>
+                                    )})
+                                ) : (
+                                    /* FLUJO CLÁSICO SIN SUBCATEGORÍAS DIRECTO A LA CATEGORÍA */
+                                    <View>
+                                        {/* ADVERTENCIA DE PORCENTAJES DE NOTAS DIRECTAS */}
+                                        {(() => {
+                                            const notasCatSum = (cat.notas || []).reduce((acc: number, n: any) => acc + (n.porcentaje || 0), 0);
+                                            const tienePorcCat = (cat.notas || []).some((n: any) => n.porcentaje !== undefined);
+                                            const tieneNotasSinPorcentaje = (cat.notas || []).some((n: any) => n.porcentaje === undefined);
+                                            
+                                            // Solo mostrar advertencia si TODAS las notas tienen % y no suma 100
+                                            if (tienePorcCat && notasCatSum !== 100 && !tieneNotasSinPorcentaje && (cat.notas || []).length > 0) {
+                                                return <Text style={{fontSize: 12, color: '#f59e0b', marginBottom: 10}}><Ionicons name="warning" size={12} /> Las notas de esta categoría suman {notasCatSum}%</Text>
+                                            }
+                                            return null;
+                                        })()}
+
+                                        {/* LISTA DE NOTAS */}
+                                        {(cat.notas || []).length > 0 ? (
+                                            cat.notas.map((nota: any) => (
+                                                <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, marginBottom: 6 }}>
+                                                    {editandoNotaId === nota.id ? (
+                                                        <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+                                                            <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 10}]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
+                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="%" keyboardType="numeric" />
+                                                            <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
+                                                            <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, height: '100%' }} onPress={() => {
+                                                                const valText = editNotaValor.trim();
+                                                                const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
+                                                                const porc = editNotaPorc.trim() ? parseFloat(editNotaPorc.replace(',','.')) : undefined;
+                                                                if (val !== null && (isNaN(val) || val < 1 || val > 7)) return Alert.alert('Error', 'Nota inválida');
+                                                                if (porc !== undefined && (isNaN(porc) || porc <= 0 || porc > 100)) return Alert.alert('Error', 'Porcentaje inválido');
+                                                                actualizarNota(ramoParaNotas.cicloId, ramoAct.id, cat.id, nota.id, { ...nota, valor: val, descripcion: editNotaDesc, porcentaje: porc });
+                                                                setEditandoNotaId(null);
+                                                            }}>
+                                                                <Ionicons name="checkmark" size={18} color="white" />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    ) : (
+                                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }} onPress={() => iniciarEdicionNota(nota)}>
+                                                                <Text style={{ flex: 1, color: '#475569' }}>
+                                                                    {nota.descripcion || 'Sin descripción'}
+                                                                    {nota.porcentaje ? ` (${nota.porcentaje}%)` : ''}
+                                                                </Text>
+                                                                <Text style={{ fontWeight: 'bold', fontSize: 16, color: nota.valor != null ? getColorNota(nota.valor) : (isSimulando && notaSimulada ? '#94a3b8' : '#94a3b8'), marginRight: 15, fontStyle: isSimulando && nota.valor == null ? 'italic' : 'normal' }}>
+                                                                    {nota.valor != null ? nota.valor.toFixed(1) : (isSimulando && notaSimulada ? notaSimulada.toFixed(1) : '-')}
+                                                                </Text>
+                                                            </TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => !isSimulando && eliminarNota(ramoParaNotas.cicloId, ramoAct.id, cat.id, nota.id)}>
+                                                                <Ionicons name="trash-outline" size={20} color={isSimulando ? "#cbd5e1" : "#94a3b8"} />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            ))
+                                        ) : (
+                                            <Text style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 13, marginBottom: 10 }}>No hay notas. Añade notas directas o crea una subcategoría.</Text>
+                                        )}
+
+                                        {/* AÑADIR NOTA A CATEGORÍA */}
+                                        {!isSimulando && (
+                                            categoriaSeleccionadaId === cat.id ? (
+                                                <View style={{ flexDirection: 'row', gap: 5, marginTop: 10 }}>
+                                                <TextInput style={[styles.input, {flex: 2, marginBottom: 0, paddingVertical: 10}]} placeholder="Descripción (Ej. Prueba)" value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
+                                                <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
+                                                <TextInput style={[styles.input, {flex: 1, marginBottom: 0, paddingVertical: 10}]} placeholder="%" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                                <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 15, borderRadius: 10 }} onPress={() => {
+                                                    const valText = nuevaNotaValor.trim();
+                                                    const val = valText !== '' ? parseFloat(valText.replace(',','.')) : null;
+                                                    const porc = nuevaNotaPorcentaje.trim() ? parseFloat(nuevaNotaPorcentaje.replace(',','.')) : undefined;
+                                                    if (val !== null && (isNaN(val) || val < 1 || val > 7)) return Alert.alert('Error', 'Ingresa una nota válida (entre 1.0 y 7.0)');
+                                                    if (porc !== undefined && (isNaN(porc) || porc <= 0 || porc > 100)) return Alert.alert('Error', 'Porcentaje inválido.');
+                                                    agregarNota(ramoParaNotas.cicloId, ramoAct.id, cat.id, { id: Math.random().toString(), valor: val, descripcion: nuevaNotaDesc, porcentaje: porc });
+                                                    setNuevaNotaValor(''); setNuevaNotaDesc(''); setNuevaNotaPorcentaje(''); setCategoriaSeleccionadaId(null);
+                                                }}>
+                                                    <Ionicons name="checkmark" size={20} color="white" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }} onPress={() => { setCategoriaSeleccionadaId(cat.id); setSubcategoriaSeleccionadaId(null); }}>
+                                                <Ionicons name="add" size={16} color="#10b981" />
+                                                </TouchableOpacity>
+                                            )
+                                        )}
+                                    </View>
+                                )}
+                            </View>
+                            );
+                        })}
+
+                        {/* FORMULARIO NUEVA CATEGORÍA */}
+                        <View style={{ backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', marginTop: 10 }}>
+                            <Text style={{fontSize: 14, fontWeight: 'bold', color: '#1e40af', marginBottom: 10}}>Nueva Categoría</Text>
+                            <View style={{flexDirection: 'row', gap: 10}}>
+                                <TextInput style={[styles.input, {flex: 2, backgroundColor: 'white', marginBottom: 0}]} placeholder="Nombre (Ej. Laboratorio)" value={nuevaCategoriaNombre} onChangeText={setNuevaCategoriaNombre} />
+                                <TextInput style={[styles.input, {flex: 1, backgroundColor: 'white', marginBottom: 0}]} placeholder="%" keyboardType="numeric" value={nuevaCategoriaPorcentaje} onChangeText={setNuevaCategoriaPorcentaje} />
+                            </View>
+                            <TouchableOpacity style={{ backgroundColor: '#1a73e8', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 10 }} onPress={() => {
+                                const porc = parseFloat(nuevaCategoriaPorcentaje);
+                                if (!nuevaCategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido (1-100).');
+                                guardarCategoria(ramoParaNotas.cicloId, ramoAct.id, { id: Math.random().toString(), nombre: nuevaCategoriaNombre, porcentaje: porc, notas: [] });
+                                setNuevaCategoriaNombre(''); setNuevaCategoriaPorcentaje('');
+                            }}>
+                                <Text style={{color: 'white', fontWeight: 'bold'}}>Agregar Categoría</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{height: 30}} />
+                    </ScrollView>
+                );
+            })()}
+
           </View>
         </View>
       </Modal>
