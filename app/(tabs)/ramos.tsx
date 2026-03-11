@@ -64,9 +64,19 @@ export default function RamosScreen() {
 
   const guardarCiclo = () => {
     if (!tempAño.trim()) return Alert.alert("Error", "Selecciona un año válido.");
+
+    // Validación para evitar ciclos duplicados (mismo año y semestre)
+    const cicloExistente = ciclos.find(c => c.año === tempAño && c.semestre === tempSemestre);
+
     if (cicloAEditarId) {
+      if (cicloExistente && cicloExistente.id !== cicloAEditarId) {
+        return Alert.alert("No permitido", `Ya existe un ciclo para ${tempSemestre} ${tempAño}.`);
+      }
       editarCiclo(cicloAEditarId, tempAño, tempSemestre);
     } else {
+      if (cicloExistente) {
+        return Alert.alert("No permitido", `Ya existe un ciclo para ${tempSemestre} ${tempAño}.`);
+      }
       crearCiclo(tempAño, tempSemestre);
     }
     setModalPeriodoVisible(false);
