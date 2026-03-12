@@ -3,16 +3,26 @@ import React, { createContext, useContext, useState } from 'react';
 const AppContext = createContext<any>(null);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  
+
   const [ciclos, setCiclos] = useState<any[]>([]);
   const [actividadesGlobales, setActividadesGlobales] = useState<any[]>([]);
-  
-  // NUEVO: Memoria global del horario
+
+  // Memoria global del horario
   const [bloquesHorario, setBloquesHorario] = useState<any[]>([]);
 
-  // NUEVO: Memoria global de apuntes
-  // Estructura: { id, ramoId (id or 'general'), titulo, contenido, fecha }
+  // Memoria global de apuntes
   const [apuntesGlobales, setApuntesGlobales] = useState<any[]>([]);
+
+  // NUEVO: Memoria global de Eventos
+  const [eventosGlobales, setEventosGlobales] = useState<any[]>([]);
+
+  const agregarEvento = (nuevoEvento: any) => {
+    setEventosGlobales([nuevoEvento, ...eventosGlobales]);
+  };
+
+  const eliminarEvento = (id: string) => {
+    setEventosGlobales(eventosGlobales.filter(e => e.id !== id));
+  };
 
   const agregarApunte = (nuevoApunte: any) => {
     setApuntesGlobales([nuevoApunte, ...apuntesGlobales]);
@@ -48,13 +58,13 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const actualizarRamo = (cicloId: string, idRamo: string, ramoActualizado: any) => {
-    setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.map((r:any) => r.id === idRamo ? ramoActualizado : r) } : c));
+    setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.map((r: any) => r.id === idRamo ? ramoActualizado : r) } : c));
   };
 
   // --- LÓGICA DE NOTAS --- //
   const calcularPromedioRamo = (categorias: any[]) => {
     if (!categorias || categorias.length === 0) return 0;
-    
+
     let notaAcumulada = 0;
     let porcentajeTotalAplicado = 0;
 
@@ -62,7 +72,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       let promedioCategoria = 0;
       let tieneNotasVálidas = false;
 
-      // Evaluar Subcategorías primero si existen
       if (cat.subcategorias && cat.subcategorias.length > 0) {
         let notaAcumSub = 0;
         let porcAcumSub = 0;
@@ -74,12 +83,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
             const notasConPorcentaje = sub.notas.filter((n: any) => n.porcentaje);
             const notasSinPorcentaje = sub.notas.filter((n: any) => !n.porcentaje);
-            
+
             const porcentajeOcupado = notasConPorcentaje.reduce((acc: number, n: any) => acc + n.porcentaje, 0);
             const porcentajeRestante = Math.max(0, 100 - porcentajeOcupado);
             const porcParaSinPorcentaje = notasSinPorcentaje.length > 0 ? porcentajeRestante / notasSinPorcentaje.length : 0;
 
-            // Calcular promedio de la subcategoría integrando los porcentajes de las notas
             sub.notas.forEach((nota: any) => {
               const porcNota = nota.porcentaje || porcParaSinPorcentaje;
               const valorNota = nota.valor != null ? nota.valor : 1.0;
@@ -87,9 +95,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               porcTotalNotas += porcNota;
             });
 
-            // Promedio final de la subcategoría (extrapolado si porcTotalNotas < 100)
             const promSub = porcTotalNotas > 0 ? (sumSub / porcTotalNotas) * 100 : 0;
-            
+
             if (porcTotalNotas > 0) {
               notaAcumSub += (promSub * sub.porcentaje) / 100;
               porcAcumSub += sub.porcentaje;
@@ -101,15 +108,14 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           promedioCategoria = (notaAcumSub / porcAcumSub) * 100;
           tieneNotasVálidas = true;
         }
-      } 
-      // Si no hay subcategorías, evaluar notas directas de la categoría
+      }
       else if (cat.notas && cat.notas.length > 0) {
         let sumNotas = 0;
         let porcTotalNotas = 0;
 
         const notasConPorcentaje = cat.notas.filter((n: any) => n.porcentaje);
         const notasSinPorcentaje = cat.notas.filter((n: any) => !n.porcentaje);
-        
+
         const porcentajeOcupado = notasConPorcentaje.reduce((acc: number, n: any) => acc + n.porcentaje, 0);
         const porcentajeRestante = Math.max(0, 100 - porcentajeOcupado);
         const porcParaSinPorcentaje = notasSinPorcentaje.length > 0 ? porcentajeRestante / notasSinPorcentaje.length : 0;
@@ -143,7 +149,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
           ...c, ramos: c.ramos.map((r: any) => {
             if (r.id === ramoId) {
               const existe = (r.categorias || []).find((cat: any) => cat.id === categoria.id);
-              let nuevasCategorias = existe 
+              let nuevasCategorias = existe
                 ? r.categorias.map((cat: any) => cat.id === categoria.id ? categoria : cat)
                 : [...(r.categorias || []), categoria];
               return { ...r, categorias: nuevasCategorias, promedio: calcularPromedioRamo(nuevasCategorias) };
@@ -226,7 +232,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
               const nuevasCategorias = (r.categorias || []).map((cat: any) => {
                 if (cat.id === categoriaId) {
                   const existe = (cat.subcategorias || []).find((sub: any) => sub.id === subcategoria.id);
-                  const nuevasSubcat = existe 
+                  const nuevasSubcat = existe
                     ? cat.subcategorias.map((sub: any) => sub.id === subcategoria.id ? subcategoria : sub)
                     : [...(cat.subcategorias || []), subcategoria];
                   return { ...cat, subcategorias: nuevasSubcat };
@@ -375,12 +381,11 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const eliminarRamo = (cicloId: string, idRamo: string) => {
-    setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.filter((r:any) => r.id !== idRamo) } : c));
+    setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.filter((r: any) => r.id !== idRamo) } : c));
   };
 
   const agregarActividadGlobal = (nuevaActividad: any) => setActividadesGlobales([...actividadesGlobales, nuevaActividad]);
 
-  // NUEVO: Controladores del Horario
   const agregarBloqueHorario = (bloque: any) => setBloquesHorario([...bloquesHorario, bloque]);
   const eliminarBloqueHorario = (id: string) => setBloquesHorario(bloquesHorario.filter(b => b.id !== id));
   const limpiarBloquesVisibles = (idsALimpiar: string[]) => {
@@ -400,7 +405,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       actividadesGlobales, agregarActividadGlobal,
       bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles,
       calcularPromedioRamo,
-      apuntesGlobales, agregarApunte, eliminarApunte, actualizarApunte
+      apuntesGlobales, agregarApunte, eliminarApunte, actualizarApunte,
+      eventosGlobales, agregarEvento, eliminarEvento
     }}>
       {children}
     </AppContext.Provider>

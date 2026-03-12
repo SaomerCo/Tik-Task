@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router'; // NUEVO: Importar useLocalSearchParams
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../context/AppContext';
@@ -9,31 +9,36 @@ export default function HorarioScreen() {
   const router = useRouter();
   const diasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
   const obtenerDiaActual = () => {
-    const jsDay = new Date().getDay(); // 0 = Dom, 1 = Lun, 2 = Mar...
-    // Mapear al arreglo: Dom (0) -> indice 6. Los demás jsDay - 1
+    const jsDay = new Date().getDay();
     const indice = jsDay === 0 ? 6 : jsDay - 1;
     return diasSemana[indice];
   };
 
   const [diaActivo, setDiaActivo] = useState(obtenerDiaActual());
 
-  const { 
-    ramosGlobales, actividadesGlobales, agregarActividadGlobal, 
-    cicloActivo, bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles 
+  const {
+    ramosGlobales, actividadesGlobales, agregarActividadGlobal,
+    cicloActivo, bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles,
+    eventosGlobales, agregarEvento // NUEVO: Traer eventosGlobales y agregarEvento
   } = useAppContext();
+
+  // PARÁMETROS DESDE EVENTOS (El superpoder oculto)
+  const params = useLocalSearchParams();
+  const esModoSeleccion = params.modoSeleccion === 'true';
+  const ramoIdTarget = params.ramoId;
 
   // Estados del Menú Superior
   const [menuTopVisible, setMenuTopVisible] = useState(false);
-  const [modoEdicion, setModoEdicion] = useState(false); // Muestra/oculta los basureros
+  const [modoEdicion, setModoEdicion] = useState(false);
 
   // Estados del Formulario
   const [modalVisible, setModalVisible] = useState(false);
-  const [tipoBloque, setTipoBloque] = useState('ramo'); 
-  
+  const [tipoBloque, setTipoBloque] = useState('ramo');
+
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [ramoSeleccionado, setRamoSeleccionado] = useState<any>(null);
-  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]); 
-  
+  const [etiquetasSeleccionadas, setEtiquetasSeleccionadas] = useState<string[]>([]);
+
   const [nuevaActividadNombre, setNuevaActividadNombre] = useState('');
   const [nuevaActividadColor, setNuevaActividadColor] = useState('#f59e0b');
   const coloresActividad = ['#f59e0b', '#8b5cf6', '#ec4899', '#10b981', '#14b8a6', '#0ea5e9', '#64748b'];
@@ -56,8 +61,7 @@ export default function HorarioScreen() {
   };
 
   // --- FILTRO INTELIGENTE DE VISIBILIDAD ---
-  // Solo mostramos actividades personales O ramos que pertenezcan al ciclo actualmente encendido
-  const bloquesVisibles = bloquesHorario.filter((b: any) => 
+  const bloquesVisibles = bloquesHorario.filter((b: any) =>
     b.isActividad || (cicloActivo && b.cicloId === cicloActivo.id)
   );
 
@@ -69,11 +73,13 @@ export default function HorarioScreen() {
   const limpiarHorario = () => {
     Alert.alert('Limpiar Horario', '¿Estás seguro de que quieres borrar todos los bloques visibles de tu horario?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sí, limpiar', style: 'destructive', onPress: () => {
-          const idsVisibles = bloquesVisibles.map((b:any) => b.id);
+      {
+        text: 'Sí, limpiar', style: 'destructive', onPress: () => {
+          const idsVisibles = bloquesVisibles.map((b: any) => b.id);
           limpiarBloquesVisibles(idsVisibles);
           setMenuTopVisible(false);
-      }}
+        }
+      }
     ]);
   };
 
@@ -86,6 +92,7 @@ export default function HorarioScreen() {
   const cargarActividadGuardada = (act: any) => { setNuevaActividadNombre(act.nombre); setNuevaActividadColor(act.colorHex); };
 
   const abrirModal = () => {
+    if (esModoSeleccion) return; // Bloquear si está en modo selección
     setTipoBloque(ramosGlobales.length === 0 ? 'actividad' : 'ramo');
     setModalVisible(true);
   };
@@ -103,7 +110,8 @@ export default function HorarioScreen() {
         ramo: ramoSeleccionado.nombre, profesor: ramoSeleccionado.profesor,
         aula: ramoSeleccionado.sala, etiquetas: etiquetasSeleccionadas,
         colorHex: ramoSeleccionado.colorHex, isActividad: false,
-        cicloId: cicloActivo.id // ATADO AL CICLO ACTUAL
+        cicloId: cicloActivo.id,
+        ramoId: ramoSeleccionado.id // Guardamos ID para el modo selección
       };
     } else {
       if (!nuevaActividadNombre.trim()) return;
@@ -129,7 +137,7 @@ export default function HorarioScreen() {
     const finMin = horaFin.getHours() * 60 + horaFin.getMinutes();
     if (inicioMin >= finMin) return Alert.alert('Error', 'La hora de término debe ser posterior a la de inicio.');
 
-    const hayChoque = bloquesVisibles.filter((c:any) => c.dia === diaActivo).some((claseExistente:any) => {
+    const hayChoque = bloquesVisibles.filter((c: any) => c.dia === diaActivo).some((claseExistente: any) => {
       const inicioExistente = convertirAMinutos(claseExistente.horaInicio);
       const finExistente = convertirAMinutos(claseExistente.horaFin);
       return (inicioMin < finExistente && inicioExistente < finMin);
@@ -137,29 +145,61 @@ export default function HorarioScreen() {
 
     if (hayChoque) {
       Alert.alert('Choque ⚠️', 'Este bloque se superpone con otro. ¿Crear igual?', [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Crear', onPress: ejecutarGuardado, style: 'destructive' }
-        ]);
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Crear', onPress: ejecutarGuardado, style: 'destructive' }
+      ]);
     } else { ejecutarGuardado(); }
+  };
+
+  // --- NUEVA LÓGICA MODO SELECCIÓN ---
+  const manejarToqueBloque = (clase: any) => {
+    if (!esModoSeleccion) return; // Si no es modo selección, no hace nada al tocar (salvo que sea modo edición)
+
+    if (clase.isActividad || clase.ramoId !== ramoIdTarget) {
+      Alert.alert("Bloque incorrecto", "Por favor selecciona un bloque del ramo correspondiente a la prueba.");
+      return;
+    }
+
+    // Guardamos el evento y nos devolvemos
+    agregarEvento({
+      id: Math.random().toString(),
+      titulo: `${params.tipoEvento}: ${clase.ramo}`,
+      tipo: params.tipoEvento as string,
+      ramoId: clase.ramoId,
+      fecha: params.fechaEvento as string,
+      hora: `${clase.horaInicio} - ${clase.horaFin}`,
+      sala: clase.aula,
+      color: '#ef4444',
+      icono: 'school'
+    });
+    Alert.alert("¡Éxito!", "Evaluación registrada en el horario correctamente.");
+    router.replace('/eventos');
   };
 
   return (
     <View style={styles.mainContainer}>
-      
+
       <View style={styles.headerContainer}>
         <View style={styles.headerFlex}>
           <Text style={styles.tituloPrincipal}>Tu Horario</Text>
-          {/* BOTÓN SUPERIOR DERECHO (Menú o Hecho) */}
           {modoEdicion ? (
             <TouchableOpacity style={styles.btnHecho} onPress={() => setModoEdicion(false)}>
               <Text style={styles.textoHecho}>Hecho</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity onPress={() => setMenuTopVisible(true)} style={{padding: 5}}>
+            <TouchableOpacity onPress={() => setMenuTopVisible(true)} style={{ padding: 5 }}>
               <Ionicons name="ellipsis-vertical" size={24} color="#0f172a" />
             </TouchableOpacity>
           )}
         </View>
+
+        {/* BANNER DE MODO SELECCIÓN */}
+        {esModoSeleccion && (
+          <View style={styles.bannerSeleccion}>
+            <Ionicons name="alert-circle" size={20} color="#b45309" style={{ marginRight: 8 }} />
+            <Text style={styles.bannerTexto}>Toca el bloque de clase donde será la prueba</Text>
+          </View>
+        )}
 
         <View style={styles.selectorDias}>
           {diasSemana.map((dia) => (
@@ -171,6 +211,28 @@ export default function HorarioScreen() {
       </View>
 
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+
+        {/* RENDER DE EVENTOS TEMPORALES (Si existen para este día) */}
+        {eventosGlobales
+          .filter((e: any) => e.temporal) // Solo eventos fuera de horario
+          .map((eventoTemporal: any) => (
+            <View key={`temp-${eventoTemporal.id}`} style={[styles.tarjeta, { borderLeftColor: '#ef4444', backgroundColor: '#fef2f2' }]}>
+              <View style={styles.horaContainer}>
+                <Text style={[styles.horaTexto, { color: '#ef4444' }]}>{eventoTemporal.hora}</Text>
+              </View>
+              <View style={styles.infoContainer}>
+                <View style={styles.tituloFila}>
+                  <Text style={[styles.materiaTexto, { color: '#b91c1c' }]} numberOfLines={1}>{eventoTemporal.titulo}</Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: '#ef444420' }]}>
+                  <Ionicons name="warning" size={12} color="#ef4444" style={{ marginRight: 4 }} />
+                  <Text style={[styles.badgeTexto, { color: '#ef4444' }]}>Evaluación Temporal</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+
+
         {clasesDelDia.length === 0 ? (
           <View style={styles.estadoVacio}>
             <Ionicons name="calendar-clear-outline" size={48} color="#cbd5e1" />
@@ -182,47 +244,60 @@ export default function HorarioScreen() {
             const claseSiguiente = clasesDelDia[index + 1];
             const minutosDeVentana = claseSiguiente ? convertirAMinutos(claseSiguiente.horaInicio) - convertirAMinutos(clase.horaFin) : 0;
 
+            // Lógica de visualización para modo selección
+            const isTargetRamo = clase.ramoId === ramoIdTarget;
+            const opacidadBaja = esModoSeleccion && !isTargetRamo;
+
             return (
               <React.Fragment key={clase.id}>
-                <View style={[styles.tarjeta, { borderLeftColor: clase.colorHex }]}>
-                  <View style={styles.horaContainer}>
-                    <Text style={styles.horaTexto}>{clase.horaInicio}</Text>
-                    <Text style={styles.horaFin}>{clase.horaFin}</Text>
-                  </View>
-                  
-                  <View style={styles.infoContainer}>
-                    <View style={styles.tituloFila}>
-                      <Text style={styles.materiaTexto} numberOfLines={1}>{clase.ramo}</Text>
-                      {/* El basurero solo aparece si el modoEdicion está encendido */}
-                      {modoEdicion && (
-                        <TouchableOpacity style={styles.btnBorrarClase} onPress={() => eliminarBloqueHorario(clase.id)}>
-                          <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                        </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={esModoSeleccion ? 0.7 : 1}
+                  onPress={() => manejarToqueBloque(clase)}
+                >
+                  <View style={[
+                    styles.tarjeta,
+                    { borderLeftColor: clase.colorHex },
+                    opacidadBaja && { backgroundColor: '#f1f5f9', opacity: 0.5, borderLeftColor: '#cbd5e1' }
+                  ]}>
+                    <View style={styles.horaContainer}>
+                      <Text style={[styles.horaTexto, opacidadBaja && { color: '#94a3b8' }]}>{clase.horaInicio}</Text>
+                      <Text style={styles.horaFin}>{clase.horaFin}</Text>
+                    </View>
+
+                    <View style={styles.infoContainer}>
+                      <View style={styles.tituloFila}>
+                        <Text style={[styles.materiaTexto, opacidadBaja && { color: '#64748b' }]} numberOfLines={1}>{clase.ramo}</Text>
+                        {modoEdicion && (
+                          <TouchableOpacity style={styles.btnBorrarClase} onPress={() => eliminarBloqueHorario(clase.id)}>
+                            <Ionicons name="trash-outline" size={18} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {clase.isActividad ? (
+                        <View style={[styles.badge, { backgroundColor: opacidadBaja ? '#e2e8f0' : clase.colorHex + '20' }]}>
+                          <Ionicons name="body-outline" size={12} color={opacidadBaja ? '#94a3b8' : clase.colorHex} style={{ marginRight: 4 }} />
+                          <Text style={[styles.badgeTexto, { color: opacidadBaja ? '#94a3b8' : clase.colorHex }]}>Personal</Text>
+                        </View>
+                      ) : (
+                        <>
+                          {clase.etiquetas && clase.etiquetas.length > 0 && (
+                            <View style={styles.etiquetasContainerLista}>
+                              {clase.etiquetas.map((tag: string, i: number) => (
+                                <View key={i} style={[styles.badge, { backgroundColor: opacidadBaja ? '#e2e8f0' : clase.colorHex + '20' }]}><Text style={[styles.badgeTexto, { color: opacidadBaja ? '#94a3b8' : clase.colorHex }]}>{tag}</Text></View>
+                              ))}
+                            </View>
+                          )}
+                          {clase.aula !== 'Por definir' && clase.aula !== '' && (
+                            <Text style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}><Ionicons name="location-outline" size={12} /> {clase.aula}</Text>
+                          )}
+                        </>
                       )}
                     </View>
-                    
-                    {clase.isActividad ? (
-                      <View style={[styles.badge, { backgroundColor: clase.colorHex + '20' }]}> 
-                        <Ionicons name="body-outline" size={12} color={clase.colorHex} style={{marginRight: 4}} />
-                        <Text style={[styles.badgeTexto, { color: clase.colorHex }]}>Personal</Text>
-                      </View>
-                    ) : (
-                      <>
-                        {clase.etiquetas && clase.etiquetas.length > 0 && (
-                          <View style={styles.etiquetasContainerLista}>
-                            {clase.etiquetas.map((tag: string, i: number) => (
-                              <View key={i} style={[styles.badge, { backgroundColor: clase.colorHex + '20' }]}><Text style={[styles.badgeTexto, { color: clase.colorHex }]}>{tag}</Text></View>
-                            ))}
-                          </View>
-                        )}
-                        {clase.aula !== 'Por definir' && clase.aula !== '' && (
-                          <Text style={{color: '#64748b', fontSize: 12, marginTop: 4}}><Ionicons name="location-outline" size={12}/> {clase.aula}</Text>
-                        )}
-                      </>
-                    )}
                   </View>
-                </View>
-                {minutosDeVentana > 20 && (
+                </TouchableOpacity>
+
+                {minutosDeVentana > 20 && !esModoSeleccion && (
                   <View style={styles.ventanaContainer}><Ionicons name="cafe-outline" size={20} color="#94a3b8" /><Text style={styles.ventanaTexto}>Ventana libre: {formatearTiempoLibre(minutosDeVentana)}</Text></View>
                 )}
               </React.Fragment>
@@ -232,8 +307,7 @@ export default function HorarioScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Solo mostramos el FAB si no estamos en modo edición */}
-      {!modoEdicion && (
+      {!modoEdicion && !esModoSeleccion && (
         <TouchableOpacity style={styles.fab} onPress={abrirModal}><Ionicons name="add" size={30} color="white" /></TouchableOpacity>
       )}
 
@@ -257,7 +331,7 @@ export default function HorarioScreen() {
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            
+
             <View style={styles.tabsFormulario}>
               <TouchableOpacity style={[styles.tabForm, tipoBloque === 'ramo' && styles.tabFormActivo]} onPress={() => setTipoBloque('ramo')}>
                 <Text style={[styles.tabFormTexto, tipoBloque === 'ramo' && styles.tabFormTextoActivo]}>📚 Ramo</Text>
@@ -339,11 +413,11 @@ export default function HorarioScreen() {
             <View style={[styles.row, { marginTop: 15 }]}>
               <View style={{ flex: 1, marginRight: 10 }}>
                 <Text style={styles.label}>Hora Inicio</Text>
-                <TouchableOpacity style={styles.btnHora} onPress={() => setShowPickerInicio(true)}><Ionicons name="time-outline" size={20} color="#64748b" style={{marginRight: 8}} /><Text style={styles.textoHoraPicker}>{formatearHora(horaInicio)}</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.btnHora} onPress={() => setShowPickerInicio(true)}><Ionicons name="time-outline" size={20} color="#64748b" style={{ marginRight: 8 }} /><Text style={styles.textoHoraPicker}>{formatearHora(horaInicio)}</Text></TouchableOpacity>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>Hora Fin</Text>
-                <TouchableOpacity style={styles.btnHora} onPress={() => setShowPickerFin(true)}><Ionicons name="time-outline" size={20} color="#64748b" style={{marginRight: 8}} /><Text style={styles.textoHoraPicker}>{formatearHora(horaFin)}</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.btnHora} onPress={() => setShowPickerFin(true)}><Ionicons name="time-outline" size={20} color="#64748b" style={{ marginRight: 8 }} /><Text style={styles.textoHoraPicker}>{formatearHora(horaFin)}</Text></TouchableOpacity>
               </View>
             </View>
 
@@ -368,9 +442,12 @@ const styles = StyleSheet.create({
   headerContainer: { backgroundColor: 'white', paddingTop: 60, paddingBottom: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   headerFlex: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   tituloPrincipal: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
-  
+
   btnHecho: { backgroundColor: '#eff6ff', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20 },
   textoHecho: { color: '#1a73e8', fontWeight: 'bold', fontSize: 14 },
+
+  bannerSeleccion: { flexDirection: 'row', backgroundColor: '#fef3c7', padding: 12, marginBottom: 15, borderRadius: 12, borderWidth: 1, borderColor: '#f59e0b', alignItems: 'center', justifyContent: 'center' },
+  bannerTexto: { color: '#b45309', fontWeight: 'bold', fontSize: 13 },
 
   selectorDias: { flexDirection: 'row', justifyContent: 'space-between' },
   diaBoton: { width: 42, height: 42, borderRadius: 21, justifyContent: 'center', alignItems: 'center' },
@@ -382,7 +459,7 @@ const styles = StyleSheet.create({
   horaContainer: { width: 65, borderRightWidth: 1, borderRightColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center', paddingRight: 10, marginRight: 15 },
   horaTexto: { fontSize: 18, fontWeight: 'bold', color: '#334155' },
   horaFin: { fontSize: 12, color: '#94a3b8', marginTop: 4 },
-  infoContainer: { flex: 1, justifyContent: 'center', paddingRight: 5 }, 
+  infoContainer: { flex: 1, justifyContent: 'center', paddingRight: 5 },
   tituloFila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
   materiaTexto: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', flex: 1, paddingRight: 5 },
   btnBorrarClase: { padding: 6, backgroundColor: '#fee2e2', borderRadius: 8 },
@@ -395,7 +472,7 @@ const styles = StyleSheet.create({
   textoVacio: { fontSize: 20, fontWeight: 'bold', color: '#64748b', marginTop: 15 },
   subtextoVacio: { fontSize: 14, color: '#94a3b8', marginTop: 5, textAlign: 'center' },
   fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#1a73e8', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: '#1a73e8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
-  
+
   // MENÚ SUPERIOR
   modalOverlayTop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'flex-end', paddingRight: 20, paddingTop: 90 },
   menuTopContent: { backgroundColor: 'white', borderRadius: 12, padding: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, width: 200 },
