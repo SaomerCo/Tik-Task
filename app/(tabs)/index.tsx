@@ -8,21 +8,22 @@ import { useAppContext } from '../../context/AppContext';
 
 export default function Index() {
   const router = useRouter();
-  const { bloquesHorario, eventosGlobales } = useAppContext(); // Traemos eventosGlobales
+  const { bloquesHorario, eventosGlobales } = useAppContext();
 
   const [tiempoRestante, setTiempoRestante] = useState<string | null>(null);
   const [eventoProximo, setEventoProximo] = useState<any>(null);
 
+  // Configurar fecha del header
   const opcionesFecha: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
   const fechaHoyStr = new Date().toLocaleDateString('es-ES', opcionesFecha).toUpperCase();
 
+  // Helper para convertir hora (Ej: "08:30") a minutos totales desde la medianoche
   const convertirAMinutos = (horaStr: string) => {
     if (!horaStr || !horaStr.includes(':')) return 0;
     const [h, m] = horaStr.split(':');
     return parseInt(h) * 60 + parseInt(m);
   };
 
-  // Calcula la próxima clase del horario
   useEffect(() => {
     const calcularEventoProximo = () => {
       const ahora = new Date();
@@ -30,25 +31,43 @@ export default function Index() {
 
       const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
       const jsDay = ahora.getDay();
-      const diaString = diasSemana[jsDay];
 
-      const bloquesHoy = bloquesHorario.filter((b: any) => b.dia === diaString);
-      bloquesHoy.sort((a: any, b: any) => convertirAMinutos(a.horaInicio) - convertirAMinutos(b.horaInicio));
+      const diaHoyString = diasSemana[jsDay];
+      const diaMananaString = diasSemana[(jsDay + 1) % 7];
 
-      const proximo = bloquesHoy.find((b: any) => convertirAMinutos(b.horaInicio) > minutosActuales);
+      // 1. Buscamos clases que sean HOY y que aún no hayan pasado
+      let clasesCandidatas = bloquesHorario
+        .filter((b: any) => b.dia === diaHoyString && convertirAMinutos(b.horaInicio) > minutosActuales)
+        .map((b: any) => ({ ...b, diffMinutos: convertirAMinutos(b.horaInicio) - minutosActuales }));
 
-      if (proximo) {
+      // 2. Si ya no hay clases hoy, buscamos las primeras clases de MAÑANA
+      if (clasesCandidatas.length === 0) {
+        clasesCandidatas = bloquesHorario
+          .filter((b: any) => b.dia === diaMananaString)
+          .map((b: any) => ({
+            ...b,
+            // Calculamos los minutos restantes hasta la medianoche + los minutos de la clase de mañana
+            diffMinutos: (24 * 60 - minutosActuales) + convertirAMinutos(b.horaInicio)
+          }));
+      }
+
+      // Ordenamos para encontrar la clase más próxima
+      clasesCandidatas.sort((a: any, b: any) => a.diffMinutos - b.diffMinutos);
+      const proximo = clasesCandidatas.length > 0 ? clasesCandidatas[0] : null;
+
+      // 3. REGLA DE LAS 10 HORAS (600 minutos)
+      if (proximo && proximo.diffMinutos <= 600) {
         setEventoProximo(proximo);
-        const diffMinutos = convertirAMinutos(proximo.horaInicio) - minutosActuales;
 
-        if (diffMinutos <= 60) {
-          setTiempoRestante(`Faltan ${diffMinutos} min`);
+        if (proximo.diffMinutos <= 60) {
+          setTiempoRestante(`Faltan ${proximo.diffMinutos} min`);
         } else {
-          const horas = Math.floor(diffMinutos / 60);
-          const mins = diffMinutos % 60;
+          const horas = Math.floor(proximo.diffMinutos / 60);
+          const mins = proximo.diffMinutos % 60;
           setTiempoRestante(`En ${horas}h ${mins}m`);
         }
       } else {
+        // Si no hay clases próximas o están a más de 10 horas, se mantiene en reposo
         setEventoProximo(null);
         setTiempoRestante(null);
       }
@@ -59,10 +78,11 @@ export default function Index() {
     return () => clearInterval(intervalo);
   }, [bloquesHorario]);
 
-  // Lógica simple para mostrar el evento más próximo del calendario
-  // Por ahora, solo toma el primero de la lista global, idealmente se ordenaría por fecha real.
-  const proximoEventoAgenda = eventosGlobales && eventosGlobales.length > 0
-    ? eventosGlobales[0]
+  // --- LÓGICA DEL EVENTO MÁS CERCANO DEL CALENDARIO ---
+  const eventoAgendaProximo = eventosGlobales && eventosGlobales.length > 0
+    ? [...eventosGlobales]
+      .filter(ev => ev && ev.timestamp)
+      .sort((a, b) => a.timestamp - b.timestamp)[0]
     : null;
 
   return (
@@ -82,30 +102,36 @@ export default function Index() {
 
         <View style={styles.gridContainer}>
 
-          {/* Fila 1: Notas y Horario */}
+          {/* Fila 1 */}
           <View style={styles.row}>
+            {/* Notas Rápidas */}
             <TouchableOpacity style={[styles.gridItem, styles.bgNotes]} activeOpacity={0.8} onPress={() => router.push('/apuntes')}>
-              <View style={styles.iconCircleRed}>
-                <Ionicons name="document-text" size={24} color="#ef4444" />
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconCircleRed}>
+                  <Ionicons name="document-text" size={32} color="#ef4444" />
+                </View>
               </View>
-              <View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle}>Tomar Notas</Text>
                 <Text style={styles.gridSubtitle}>Captura rápida</Text>
               </View>
             </TouchableOpacity>
 
+            {/* Próxima Clase (Horario) */}
             <TouchableOpacity style={[styles.gridItem, styles.bgEvent]} activeOpacity={0.8} onPress={() => router.push('/horario')}>
-              <View style={styles.eventHeader}>
-                <View style={[styles.iconCircleBlue, { backgroundColor: eventoProximo ? eventoProximo.colorHex + '20' : '#dbeafe' }]}>
-                  <Ionicons name="time" size={24} color={eventoProximo ? eventoProximo.colorHex : "#3b82f6"} />
-                </View>
-                {tiempoRestante && (
+              {tiempoRestante && (
+                <View style={styles.badgeTopContainer}>
                   <View style={styles.badgeUrgency}>
                     <Text style={styles.badgeText}>{tiempoRestante}</Text>
                   </View>
-                )}
+                </View>
+              )}
+              <View style={styles.iconWrapper}>
+                <View style={[styles.iconCircleBlue, { backgroundColor: eventoProximo ? eventoProximo.colorHex + '20' : '#f1f5f9' }]}>
+                  <Ionicons name="time" size={32} color={eventoProximo ? eventoProximo.colorHex : "#94a3b8"} />
+                </View>
               </View>
-              <View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle} numberOfLines={1}>{eventoProximo ? eventoProximo.ramo : 'Sin clases'}</Text>
                 <Text style={styles.gridSubtitle} numberOfLines={1}>
                   {eventoProximo ? `${eventoProximo.horaInicio} • ${eventoProximo.aula || 'Próximo'}` : 'Nada programado hoy'}
@@ -114,59 +140,63 @@ export default function Index() {
             </TouchableOpacity>
           </View>
 
-          {/* Fila 2: Tareas y EVENTOS (Intercambiado) */}
+          {/* Fila 2 */}
           <View style={styles.row}>
+            {/* Tareas / Pendientes */}
             <TouchableOpacity style={[styles.gridItem, styles.bgTasks]} activeOpacity={0.8}>
-              <View style={styles.iconCircleGreen}>
-                <Ionicons name="checkbox" size={24} color="#10b981" />
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconCircleGreen}>
+                  <Ionicons name="checkbox" size={32} color="#10b981" />
+                </View>
               </View>
-              <View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle}>Tareas</Text>
                 <Text style={styles.gridSubtitle}>0 pendientes</Text>
               </View>
             </TouchableOpacity>
 
-            {/* WIDGET DE EVENTOS AHORA EN FILA 2 */}
+            {/* WIDGET DE EVENTO CERCANO */}
             <TouchableOpacity style={[styles.gridItem, styles.bgEvents]} activeOpacity={0.8} onPress={() => router.push('/eventos')}>
-              <View style={styles.eventHeader}>
-                <View style={styles.iconCircleOrange}>
-                  <Ionicons name="calendar" size={24} color="#f59e0b" />
-                </View>
-                {proximoEventoAgenda && (
-                  <View style={styles.badgeWarning}>
-                    <Text style={styles.badgeWarningText}>{proximoEventoAgenda.fecha}</Text>
-                  </View>
-                )}
+              <View style={styles.badgeTopContainer}>
+                <Text style={styles.smallBadgeTop}>Evento cercano</Text>
               </View>
-              <View>
+              <View style={styles.iconWrapper}>
+                <View style={[styles.iconCircleOrange, eventoAgendaProximo && { backgroundColor: eventoAgendaProximo.color + '20' }]}>
+                  <Ionicons name={eventoAgendaProximo ? (eventoAgendaProximo.icono as any) : "calendar"} size={32} color={eventoAgendaProximo ? eventoAgendaProximo.color : "#f59e0b"} />
+                </View>
+              </View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle} numberOfLines={1}>
-                  {proximoEventoAgenda ? proximoEventoAgenda.titulo : 'Evento cercano'}
+                  {eventoAgendaProximo ? eventoAgendaProximo.titulo : 'Agenda vacía'}
                 </Text>
                 <Text style={styles.gridSubtitle} numberOfLines={1}>
-                  {proximoEventoAgenda ? `A las ${proximoEventoAgenda.hora}` : 'Sin próximos eventos'}
+                  {eventoAgendaProximo ? `${eventoAgendaProximo.fecha} • ${eventoAgendaProximo.hora.split(' - ')[0]}` : 'Sin próximos eventos'}
                 </Text>
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Fila 3: RENDIMIENTO (Intercambiado) y Ajustes */}
+          {/* Fila 3 */}
           <View style={styles.row}>
-            {/* WIDGET DE RENDIMIENTO AHORA EN FILA 3 */}
             <TouchableOpacity style={[styles.gridItem, styles.bgStats]} activeOpacity={0.8} onPress={() => router.push('/ramos')}>
-              <View style={styles.iconCirclePurple}>
-                <Ionicons name="bar-chart" size={24} color="#8b5cf6" />
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconCirclePurple}>
+                  <Ionicons name="bar-chart" size={32} color="#8b5cf6" />
+                </View>
               </View>
-              <View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle}>Rendimiento</Text>
                 <Text style={styles.gridSubtitle}>Ver promedios</Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.gridItem, styles.bgSettings]} activeOpacity={0.8}>
-              <View style={styles.iconCircleGray}>
-                <Ionicons name="settings" size={24} color="#64748b" />
+              <View style={styles.iconWrapper}>
+                <View style={styles.iconCircleGray}>
+                  <Ionicons name="settings" size={32} color="#64748b" />
+                </View>
               </View>
-              <View>
+              <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle}>Ajustes</Text>
                 <Text style={styles.gridSubtitle}>Configuración</Text>
               </View>
@@ -174,37 +204,125 @@ export default function Index() {
           </View>
 
         </View>
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 40, paddingBottom: 20 },
-  fecha: { fontSize: 12, color: '#64748b', fontWeight: 'bold', letterSpacing: 1 },
-  saludo: { fontSize: 26, fontWeight: 'bold', color: '#0f172a', marginTop: 5 },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 20, flexGrow: 1 },
-  gridContainer: { flex: 1, gap: 15 },
-  row: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', gap: 15 },
-  gridItem: { flex: 1, borderRadius: 20, padding: 20, justifyContent: 'space-between', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
-  gridTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginTop: 10 },
-  gridSubtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
-  eventHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  badgeUrgency: { backgroundColor: '#fee2e2', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: -5 },
-  badgeText: { color: '#ef4444', fontSize: 11, fontWeight: 'bold' },
-  badgeWarning: { backgroundColor: '#fef3c7', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginTop: -5 },
-  badgeWarningText: { color: '#d97706', fontSize: 11, fontWeight: 'bold' },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 20,
+  },
+  fecha: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: 'bold',
+    letterSpacing: 1,
+  },
+  saludo: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    marginTop: 5,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  gridContainer: {
+    flex: 1,
+    gap: 15,
+  },
+  row: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 15,
+  },
+  gridItem: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 15,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+
+  badgeTopContainer: {
+    position: 'absolute',
+    top: 15,
+    width: '100%',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  iconWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 10,
+  },
+  textWrapper: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  gridTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  gridSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+
+  badgeUrgency: {
+    backgroundColor: '#fee2e2',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+  },
+  badgeText: {
+    color: '#ef4444',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  smallBadgeTop: {
+    fontSize: 10,
+    color: '#94a3b8',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+  },
+
   bgNotes: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9' },
   bgEvent: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#3b82f6', shadowOpacity: 0.1 },
   bgTasks: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9' },
   bgStats: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9' },
   bgEvents: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9' },
   bgSettings: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#f1f5f9' },
-  iconCircleRed: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center' },
-  iconCircleBlue: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#dbeafe', justifyContent: 'center', alignItems: 'center' },
-  iconCircleGreen: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#d1fae5', justifyContent: 'center', alignItems: 'center' },
-  iconCirclePurple: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center' },
-  iconCircleOrange: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' },
-  iconCircleGray: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
+
+  iconCircleRed: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center' },
+  iconCircleBlue: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#dbeafe', justifyContent: 'center', alignItems: 'center' },
+  iconCircleGreen: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#d1fae5', justifyContent: 'center', alignItems: 'center' },
+  iconCirclePurple: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center' },
+  iconCircleOrange: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' },
+  iconCircleGray: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
 });
