@@ -1,31 +1,94 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import React from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <Tabs 
+    <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#1a73e8',
-        tabBarInactiveTintColor: '#94a3b8',
         headerShown: false,
+        tabBarActiveTintColor: '#1a73e8', // Color azul cuando está seleccionado
+        tabBarInactiveTintColor: '#94a3b8', // Color gris cuando no está seleccionado
         tabBarStyle: {
           borderTopWidth: 1,
-          borderTopColor: '#e2e8f0',
-          // Quitamos el height fijo y usamos minHeight dinámico
-          minHeight: Platform.OS === 'android' ? 70 : 85,
-          // Le damos un colchón de espacio extra abajo específico para los botones de Android
-          paddingBottom: Platform.OS === 'android' ? 15 : 30,
-          paddingTop: 10,
+          borderTopColor: '#f1f5f9',
+          elevation: 0,
+          height: 65 + insets.bottom,
+          paddingBottom: insets.bottom + 5,
+          paddingTop: 5,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '500',
         }
-      }}>
-      
-      <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} /> }} />
-      <Tabs.Screen name="horario" options={{ title: 'Horario', tabBarIcon: ({ color }) => <Ionicons name="time" size={24} color={color} /> }} />
-      <Tabs.Screen name="eventos" options={{ title: 'Eventos', tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} /> }} />
-      <Tabs.Screen name="ramos" options={{ title: 'Ramos', tabBarIcon: ({ color }) => <Ionicons name="book" size={24} color={color} /> }} />
-      <Tabs.Screen name="estudio" options={{ title: 'Enfoque', tabBarIcon: ({ color }) => <Ionicons name="timer" size={24} color={color} /> }} />
+      }}
+    >
+      {/* 1. Ramos */}
+      <Tabs.Screen
+        name="ramos"
+        options={{
+          title: 'Ramos',
+          tabBarIcon: ({ color }) => <Ionicons name="school" size={24} color={color} />,
+        }}
+      />
 
+      {/* 2. Apuntes */}
+      <Tabs.Screen
+        name="apuntes"
+        options={{
+          title: 'Apuntes',
+          tabBarIcon: ({ color }) => <Ionicons name="pencil" size={24} color={color} />,
+        }}
+      />
+
+      {/* 3. Horario */}
+      <Tabs.Screen
+        name="horario"
+        options={{
+          title: 'Horario',
+          tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
+        }}
+      />
+
+      {/* 4. Inicio (Centro) */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Inicio',
+          tabBarIcon: ({ color }) => <Ionicons name="home" size={26} color={color} />,
+        }}
+      />
+
+      {/* 5. Eventos */}
+      <Tabs.Screen
+        name="eventos"
+        options={{
+          title: 'Eventos',
+          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={24} color={color} />,
+        }}
+      />
+
+      {/* 6. Estudio (Enfoque) */}
+      <Tabs.Screen
+        name="enfoque"
+        options={{
+          title: 'Estudio',
+          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="brain" size={26} color={color} />,
+        }}
+      />
+
+      {/* 7. Rendimiento */}
+      <Tabs.Screen
+        name="rendimiento"
+        options={{
+          title: 'Rendimiento',
+          // CAMBIAMOS EL ÍCONO AQUÍ a "stats-chart"
+          tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={24} color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

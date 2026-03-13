@@ -1,17 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router'; // NUEVO: Importación del router
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp, Layout } from 'react-native-reanimated';
 import { useAppContext } from '../../context/AppContext';
 
-// Habilitar animaciones de layout en Android si es necesario
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function RamosScreen() {
-  const router = useRouter(); // NUEVO: Inicializar router
+  const router = useRouter();
 
   const {
     ciclos, crearCiclo, editarCiclo, eliminarCiclo, toggleCicloActivo,
@@ -24,14 +23,12 @@ export default function RamosScreen() {
   const añoCalculado = new Date().getFullYear();
   const añosDisponibles = Array.from({ length: añoCalculado - 2015 + 1 }, (_, i) => (añoCalculado - i).toString());
 
-  // --- ESTADOS DE CICLOS ---
   const [ciclosExpandidos, setCiclosExpandidos] = useState<{ [key: string]: boolean }>({});
   const [modalPeriodoVisible, setModalPeriodoVisible] = useState(false);
   const [cicloAEditarId, setCicloAEditarId] = useState<string | null>(null);
   const [tempAño, setTempAño] = useState(añoCalculado.toString());
   const [tempSemestre, setTempSemestre] = useState('Primer Semestre');
 
-  // --- ESTADOS DE RAMOS ---
   const [modalVisible, setModalVisible] = useState(false);
   const [cicloDestinoId, setCicloDestinoId] = useState<string | null>(null);
   const [ramoAEditarId, setRamoAEditarId] = useState<string | null>(null);
@@ -44,7 +41,6 @@ export default function RamosScreen() {
   const [textoEtiqueta, setTextoEtiqueta] = useState('');
   const [etiquetasHistoricas, setEtiquetasHistoricas] = useState(['Cátedra', 'Taller', 'Asistencia Obligatoria', 'Laboratorio']);
 
-  // --- ESTADOS DE MENÚS DESPLEGABLES ---
   const [modalOpcionesCicloVisible, setModalOpcionesCicloVisible] = useState(false);
   const [cicloSeleccionado, setCicloSeleccionado] = useState<any>(null);
 
@@ -52,7 +48,6 @@ export default function RamosScreen() {
   const [ramoSeleccionado, setRamoSeleccionado] = useState<any>(null);
   const [modalCopiarRamoVisible, setModalCopiarRamoVisible] = useState(false);
 
-  // --- ESTADOS DE NOTAS ---
   const [modalNotasVisible, setModalNotasVisible] = useState(false);
   const [ramoParaNotas, setRamoParaNotas] = useState<any>(null);
 
@@ -98,6 +93,39 @@ export default function RamosScreen() {
   const formatPromedio = (prom: number) => {
     const fixed = prom.toFixed(2);
     return fixed.endsWith('0') ? prom.toFixed(1) : fixed;
+  };
+
+  const confirmarEliminarSubcategoria = (cicloId: string, ramoId: string, catId: string, subId: string, subNombre: string) => {
+    Alert.alert(
+      'Eliminar Subcategoría',
+      `¿Estás seguro de que deseas eliminar la subcategoría "${subNombre}" y todas sus notas?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => eliminarSubcategoria(cicloId, ramoId, catId, subId) }
+      ]
+    );
+  };
+
+  const confirmarEliminarNotaSubcategoria = (cicloId: string, ramoId: string, catId: string, subId: string, notaId: string, notaDesc: string) => {
+    Alert.alert(
+      'Eliminar Nota',
+      `¿Eliminar la nota "${notaDesc || 'Sin descripción'}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => eliminarNotaSubcategoria(cicloId, ramoId, catId, subId, notaId) }
+      ]
+    );
+  };
+
+  const confirmarEliminarNota = (cicloId: string, ramoId: string, catId: string, notaId: string, notaDesc: string) => {
+    Alert.alert(
+      'Eliminar Nota',
+      `¿Eliminar la nota "${notaDesc || 'Sin descripción'}"?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => eliminarNota(cicloId, ramoId, catId, notaId) }
+      ]
+    );
   };
 
   const simularNotasVacias = (categorias: any, notaBuscada: number) => {
@@ -183,7 +211,6 @@ export default function RamosScreen() {
     setCiclosExpandidos(prev => ({ ...prev, [id]: prev[id] === undefined ? false : !prev[id] }));
   };
 
-  // --- FUNCIONES DE CICLOS ---
   const abrirModalNuevoCiclo = () => {
     setCicloAEditarId(null);
     setTempAño(añoCalculado.toString());
@@ -223,7 +250,6 @@ export default function RamosScreen() {
     ]);
   };
 
-  // --- FUNCIONES DE RAMOS ---
   const agregarEtiquetaManual = () => {
     const tag = textoEtiqueta.trim();
     if (tag !== '' && !etiquetasRamo.includes(tag)) {
@@ -284,7 +310,6 @@ export default function RamosScreen() {
   return (
     <View style={styles.mainContainer}>
 
-      {/* HEADER DE LA PANTALLA */}
       <View style={styles.headerContainer}>
         <View style={styles.headerFlex}>
           <View>
@@ -357,7 +382,6 @@ export default function RamosScreen() {
                     </View>
                   </View>
 
-                  {/* VISTA CERRADA (Resumen) */}
                   {!isExpandido && (
                     <View style={styles.resumenCicloContainer}>
                       {ciclo.ramos.length === 0 ? (
@@ -371,7 +395,6 @@ export default function RamosScreen() {
                     </View>
                   )}
 
-                  {/* VISTA ABIERTA (Botón añadir) */}
                   {isExpandido && (
                     <Animated.View
                       entering={FadeInUp.duration(300)}
@@ -387,7 +410,6 @@ export default function RamosScreen() {
                   )}
                 </TouchableOpacity>
 
-                {/* LISTA DE RAMOS DEL CICLO */}
                 {isExpandido && (
                   <Animated.View
                     entering={FadeInUp.duration(400).delay(50)}
@@ -425,7 +447,6 @@ export default function RamosScreen() {
                               <Text style={styles.miniBotonTexto}>Notas</Text>
                             </TouchableOpacity>
 
-                            {/* NUEVO: BOTÓN APUNTES CON ROUTER PUSH */}
                             <TouchableOpacity
                               style={styles.miniBoton}
                               onPress={() => router.push({ pathname: '/apuntes', params: { ramoIdFiltro: ramo.id } })}
@@ -457,7 +478,7 @@ export default function RamosScreen() {
         </ScrollView>
       )}
 
-      {/* MODAL: CREAR/EDITAR CICLO */}
+      {/* MODALES CONFIGURACIÓN CICLOS/RAMOS */}
       <Modal animationType="fade" transparent={true} visible={modalPeriodoVisible}>
         <View style={styles.modalOverlayCentro}>
           <View style={styles.modalContentCentro}>
@@ -486,7 +507,6 @@ export default function RamosScreen() {
         </View>
       </Modal>
 
-      {/* MODAL: OPCIONES DEL CICLO */}
       <Modal animationType="fade" transparent={true} visible={modalOpcionesCicloVisible} onRequestClose={() => setModalOpcionesCicloVisible(false)}>
         <TouchableOpacity style={styles.modalOverlayCentro} activeOpacity={1} onPress={() => setModalOpcionesCicloVisible(false)}>
           <View style={styles.opcionesContent}>
@@ -520,7 +540,6 @@ export default function RamosScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL: OPCIONES DEL RAMO */}
       <Modal animationType="fade" transparent={true} visible={modalOpcionesRamoVisible} onRequestClose={() => setModalOpcionesRamoVisible(false)}>
         <TouchableOpacity style={styles.modalOverlayCentro} activeOpacity={1} onPress={() => setModalOpcionesRamoVisible(false)}>
           <View style={styles.opcionesContent}>
@@ -532,7 +551,6 @@ export default function RamosScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL: COPIAR RAMO A OTRO CICLO */}
       <Modal animationType="fade" transparent={true} visible={modalCopiarRamoVisible} onRequestClose={() => setModalCopiarRamoVisible(false)}>
         <TouchableOpacity style={styles.modalOverlayCentro} activeOpacity={1} onPress={() => setModalCopiarRamoVisible(false)}>
           <View style={styles.opcionesContent}>
@@ -562,19 +580,36 @@ export default function RamosScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* MODAL: FORMULARIO DE RAMOS */}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text style={styles.modalTitulo}>{ramoAEditarId ? 'Editar Ramo' : 'Inscribir Ramo'}</Text>
+
               <Text style={styles.label}>Nombre del Ramo *</Text>
-              <TextInput style={styles.input} placeholder="Ej. Álgebra Lineal" value={nuevoNombre} onChangeText={setNuevoNombre} />
+              <TextInput style={styles.input} placeholder="Ej. Álgebra Lineal" value={nuevoNombre} onChangeText={setNuevoNombre} maxLength={24} />
+
               <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 10 }}><Text style={styles.label}>Profesor</Text><TextInput style={styles.input} placeholder="Opcional" value={nuevoProfesor} onChangeText={setNuevoProfesor} /></View>
-                <View style={{ flex: 1 }}><Text style={styles.label}>Sala</Text><TextInput style={styles.input} placeholder="Opcional" value={nuevaSala} onChangeText={setNuevaSala} /></View>
+                <View style={{ flex: 1, marginRight: 10 }}>
+                  <Text style={styles.label}>Profesor</Text>
+                  <TextInput style={styles.input} placeholder="Opcional" value={nuevoProfesor} onChangeText={setNuevoProfesor} maxLength={12} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Sala</Text>
+                  <TextInput style={styles.input} placeholder="Opcional" value={nuevaSala} onChangeText={setNuevaSala} maxLength={12} />
+                </View>
               </View>
+
               <Text style={styles.label}>Etiquetas</Text>
+
+              {/* NUEVO: CUADRO EXPLICATIVO DE ETIQUETAS */}
+              <View style={{ flexDirection: 'row', backgroundColor: '#eff6ff', padding: 10, borderRadius: 8, marginBottom: 10, alignItems: 'flex-start', borderWidth: 1, borderColor: '#bfdbfe' }}>
+                <Ionicons name="information-circle" size={20} color="#1a73e8" style={{ marginRight: 8, marginTop: 2 }} />
+                <Text style={{ flex: 1, fontSize: 12, color: '#1e40af', lineHeight: 18 }}>
+                  Crea etiquetas (ej: Cátedra, Laboratorio) para diferenciar el tipo de clase al armar tu <Text style={{ fontWeight: 'bold' }}>Horario</Text>.
+                </Text>
+              </View>
+
               <View style={styles.etiquetaInputContainer}>
                 <TextInput style={styles.inputEtiqueta} placeholder="Nueva etiqueta..." value={textoEtiqueta} onChangeText={setTextoEtiqueta} onSubmitEditing={agregarEtiquetaManual} />
                 <TouchableOpacity style={styles.btnAgregarEtiqueta} onPress={agregarEtiquetaManual}><Ionicons name="add" size={20} color="white" /></TouchableOpacity>
@@ -629,7 +664,6 @@ export default function RamosScreen() {
 
               return (
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  {/* HEADER DE PROMEDIO */}
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 15, borderWidth: 1, borderColor: '#e2e8f0' }}>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 14, color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Promedio Actual</Text>
@@ -642,7 +676,6 @@ export default function RamosScreen() {
                     </View>
                   </View>
 
-                  {/* BOTON DE SIMULAR */}
                   <View style={{ marginBottom: 15, paddingHorizontal: 5 }}>
                     {!isSimulando ? (
                       <TouchableOpacity
@@ -679,7 +712,6 @@ export default function RamosScreen() {
                     </Text>
                   </View>
 
-                  {/* LISTA DE CATEGORÍAS */}
                   {categoriasAct.map((cat: any) => {
                     const hasSubcats = cat.subcategorias && cat.subcategorias.length > 0;
                     const totalPorcSubcats = hasSubcats ? cat.subcategorias.reduce((acc: number, sub: any) => acc + sub.porcentaje, 0) : 0;
@@ -721,14 +753,13 @@ export default function RamosScreen() {
                           )}
                         </View>
 
-                        {/* FORMULARIO NUEVA SUBCATEGORÍA INTERNO */}
                         {creandoSubParaCatId === cat.id && (
                           <View style={{ backgroundColor: '#f1f5f9', padding: 10, borderRadius: 8, marginBottom: 15 }}>
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 6 }}>Añadir Subcategoría a {cat.nombre}</Text>
                             <View style={{ flexDirection: 'row', gap: 5 }}>
                               <TextInput style={[styles.input, { flex: 2, paddingVertical: 8, marginBottom: 0, fontSize: 13 }]} placeholder="Ej. Prueba" value={nuevaSubcategoriaNombre} onChangeText={setNuevaSubcategoriaNombre} />
                               <TextInput style={[styles.input, { flex: 1, paddingVertical: 8, marginBottom: 0, fontSize: 13 }]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaSubcategoriaPorcentaje} onChangeText={setNuevaSubcategoriaPorcentaje} />
-                              <TouchableOpacity style={{ backgroundColor: '#1a73e8', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
+                              <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
                                 const porc = parseFloat(nuevaSubcategoriaPorcentaje);
                                 if (!nuevaSubcategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido.');
                                 guardarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, { id: Math.random().toString(), nombre: nuevaSubcategoriaNombre, porcentaje: porc, notas: [] });
@@ -743,7 +774,6 @@ export default function RamosScreen() {
                           </View>
                         )}
 
-                        {/* RENDER SUBCATEGORÍAS */}
                         {hasSubcats ? (
                           cat.subcategorias.map((sub: any) => {
                             const subNotasSum = (sub.notas || []).reduce((acc: number, n: any) => acc + (n.porcentaje || 0), 0);
@@ -776,14 +806,13 @@ export default function RamosScreen() {
                                           <Text style={{ fontSize: 11, color: '#f59e0b' }}><Ionicons name="warning" size={11} /> Notas suman {subNotasSum}%</Text>
                                         )}
                                       </View>
-                                      <TouchableOpacity onPress={() => eliminarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id)}>
+                                      <TouchableOpacity onPress={() => confirmarEliminarSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, sub.nombre)}>
                                         <Ionicons name="trash-outline" size={16} color="#ef4444" />
                                       </TouchableOpacity>
                                     </View>
                                   )}
                                 </View>
 
-                                {/* NOTAS DE LA SUBCATEGORÍA */}
                                 {(sub.notas || []).map((nota: any) => (
                                   <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 8, borderRadius: 6, marginBottom: 4 }}>
                                     {editandoNotaId === nota.id ? (
@@ -814,7 +843,7 @@ export default function RamosScreen() {
                                             {nota.valor != null ? nota.valor.toFixed(1) : (isSimulando && notaSimulada ? notaSimulada.toFixed(1) : '-')}
                                           </Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity onPress={() => !isSimulando && eliminarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, nota.id)}>
+                                        <TouchableOpacity onPress={() => !isSimulando && confirmarEliminarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, nota.id, nota.descripcion)}>
                                           <Ionicons name="trash-outline" size={18} color={isSimulando ? "#cbd5e1" : "#94a3b8"} />
                                         </TouchableOpacity>
                                       </View>
@@ -822,13 +851,12 @@ export default function RamosScreen() {
                                   </View>
                                 ))}
 
-                                {/* AÑADIR NOTA A SUBCATEGORÍA */}
                                 {!isSimulando && (
                                   subcategoriaSeleccionadaId === sub.id ? (
                                     <View style={{ flexDirection: 'row', gap: 5, marginTop: 5 }}>
                                       <TextInput style={[styles.input, { flex: 2, marginBottom: 0, paddingVertical: 8, fontSize: 13 }]} placeholder="Desc." value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
-                                      <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13 }]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
                                       <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13 }]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                      <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 8, fontSize: 13 }]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
                                       <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8 }} onPress={() => {
                                         const valText = nuevaNotaValor.trim();
                                         const val = valText !== '' ? parseFloat(valText.replace(',', '.')) : null;
@@ -838,7 +866,7 @@ export default function RamosScreen() {
                                         agregarNotaSubcategoria(ramoParaNotas.cicloId, ramoAct.id, cat.id, sub.id, { id: Math.random().toString(), valor: val, descripcion: nuevaNotaDesc, porcentaje: porc });
                                         setNuevaNotaValor(''); setNuevaNotaDesc(''); setNuevaNotaPorcentaje(''); setSubcategoriaSeleccionadaId(null);
                                       }}>
-                                        <Ionicons name="add" size={16} color="white" />
+                                        <Ionicons name="checkmark" size={16} color="white" />
                                       </TouchableOpacity>
                                     </View>
                                   ) : (
@@ -851,9 +879,7 @@ export default function RamosScreen() {
                             )
                           })
                         ) : (
-                          /* FLUJO CLÁSICO SIN SUBCATEGORÍAS DIRECTO A LA CATEGORÍA */
                           <View>
-                            {/* ADVERTENCIA DE PORCENTAJES DE NOTAS DIRECTAS */}
                             {(() => {
                               const notasCatSum = (cat.notas || []).reduce((acc: number, n: any) => acc + (n.porcentaje || 0), 0);
                               const tienePorcCat = (cat.notas || []).some((n: any) => n.porcentaje !== undefined);
@@ -865,15 +891,14 @@ export default function RamosScreen() {
                               return null;
                             })()}
 
-                            {/* LISTA DE NOTAS */}
                             {(cat.notas || []).length > 0 ? (
                               cat.notas.map((nota: any) => (
                                 <View key={nota.id} style={{ backgroundColor: '#f8fafc', padding: 10, borderRadius: 8, marginBottom: 6 }}>
                                   {editandoNotaId === nota.id ? (
                                     <View style={{ flexDirection: 'row', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
                                       <TextInput style={[styles.input, { minWidth: 80, maxWidth: 120, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 8, fontSize: 13 }]} value={editNotaDesc} onChangeText={setEditNotaDesc} placeholder="Desc." />
-                                      <TextInput style={[styles.input, { minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center' }]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
                                       <TextInput style={[styles.input, { minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center' }]} value={editNotaPorc} onChangeText={setEditNotaPorc} placeholder="% (Opc.)" keyboardType="numeric" />
+                                      <TextInput style={[styles.input, { minWidth: 50, maxWidth: 70, marginBottom: 0, paddingVertical: 6, paddingHorizontal: 5, fontSize: 13, textAlign: 'center' }]} value={editNotaValor} onChangeText={setEditNotaValor} placeholder="Nota" keyboardType="numeric" />
                                       <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 12, borderRadius: 8, paddingVertical: 6 }} onPress={() => {
                                         const valText = editNotaValor.trim();
                                         const val = valText !== '' ? parseFloat(valText.replace(',', '.')) : null;
@@ -897,7 +922,7 @@ export default function RamosScreen() {
                                           {nota.valor != null ? nota.valor.toFixed(1) : (isSimulando && notaSimulada ? notaSimulada.toFixed(1) : '-')}
                                         </Text>
                                       </TouchableOpacity>
-                                      <TouchableOpacity onPress={() => !isSimulando && eliminarNota(ramoParaNotas.cicloId, ramoAct.id, cat.id, nota.id)}>
+                                      <TouchableOpacity onPress={() => !isSimulando && confirmarEliminarNota(ramoParaNotas.cicloId, ramoAct.id, cat.id, nota.id, nota.descripcion)}>
                                         <Ionicons name="trash-outline" size={20} color={isSimulando ? "#cbd5e1" : "#94a3b8"} />
                                       </TouchableOpacity>
                                     </View>
@@ -908,13 +933,12 @@ export default function RamosScreen() {
                               <Text style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 13, marginBottom: 10 }}>No hay notas. Añade notas directas o crea una subcategoría.</Text>
                             )}
 
-                            {/* AÑADIR NOTA A CATEGORÍA */}
                             {!isSimulando && (
                               categoriaSeleccionadaId === cat.id ? (
                                 <View style={{ flexDirection: 'row', gap: 5, marginTop: 10 }}>
                                   <TextInput style={[styles.input, { flex: 2, marginBottom: 0, paddingVertical: 10 }]} placeholder="Descripción (Ej. Prueba)" value={nuevaNotaDesc} onChangeText={setNuevaNotaDesc} />
-                                  <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 10 }]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
                                   <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 10 }]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaNotaPorcentaje} onChangeText={setNuevaNotaPorcentaje} />
+                                  <TextInput style={[styles.input, { flex: 1, marginBottom: 0, paddingVertical: 10 }]} placeholder="Nota" keyboardType="numeric" value={nuevaNotaValor} onChangeText={setNuevaNotaValor} />
                                   <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 15, borderRadius: 10 }} onPress={() => {
                                     const valText = nuevaNotaValor.trim();
                                     const val = valText !== '' ? parseFloat(valText.replace(',', '.')) : null;
@@ -939,21 +963,21 @@ export default function RamosScreen() {
                     );
                   })}
 
-                  {/* FORMULARIO NUEVA CATEGORÍA */}
                   <View style={{ backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#bfdbfe', marginTop: 10 }}>
                     <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#1e40af', marginBottom: 10 }}>Nueva Categoría</Text>
                     <View style={{ flexDirection: 'row', gap: 10 }}>
                       <TextInput style={[styles.input, { flex: 2, backgroundColor: 'white', marginBottom: 0 }]} placeholder="Nombre (Ej. Laboratorio)" value={nuevaCategoriaNombre} onChangeText={setNuevaCategoriaNombre} />
                       <TextInput style={[styles.input, { flex: 1, backgroundColor: 'white', marginBottom: 0 }]} placeholder="% (Opc.)" keyboardType="numeric" value={nuevaCategoriaPorcentaje} onChangeText={setNuevaCategoriaPorcentaje} />
+
+                      <TouchableOpacity style={{ backgroundColor: '#10b981', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 15, borderRadius: 10 }} onPress={() => {
+                        const porc = parseFloat(nuevaCategoriaPorcentaje);
+                        if (!nuevaCategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido (1-100).');
+                        guardarCategoria(ramoParaNotas.cicloId, ramoAct.id, { id: Math.random().toString(), nombre: nuevaCategoriaNombre, porcentaje: porc, notas: [] });
+                        setNuevaCategoriaNombre(''); setNuevaCategoriaPorcentaje('');
+                      }}>
+                        <Ionicons name="checkmark" size={24} color="white" />
+                      </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={{ backgroundColor: '#1a73e8', padding: 12, borderRadius: 10, alignItems: 'center', marginTop: 10 }} onPress={() => {
-                      const porc = parseFloat(nuevaCategoriaPorcentaje);
-                      if (!nuevaCategoriaNombre.trim() || isNaN(porc) || porc <= 0 || porc > 100) return Alert.alert('Error', 'Completa el nombre y un porcentaje válido (1-100).');
-                      guardarCategoria(ramoParaNotas.cicloId, ramoAct.id, { id: Math.random().toString(), nombre: nuevaCategoriaNombre, porcentaje: porc, notas: [] });
-                      setNuevaCategoriaNombre(''); setNuevaCategoriaPorcentaje('');
-                    }}>
-                      <Text style={{ color: 'white', fontWeight: 'bold' }}>Agregar Categoría</Text>
-                    </TouchableOpacity>
                   </View>
                   <View style={{ height: 30 }} />
                 </ScrollView>

@@ -6,18 +6,23 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 
+// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA
+import Bienvenida from '../../components/Bienvenida';
+
 export default function Index() {
   const router = useRouter();
-  const { bloquesHorario, eventosGlobales } = useAppContext();
+
+  const { bloquesHorario, eventosGlobales, tareasGlobales } = useAppContext();
 
   const [tiempoRestante, setTiempoRestante] = useState<string | null>(null);
   const [eventoProximo, setEventoProximo] = useState<any>(null);
 
-  // Configurar fecha del header
+  // ESTADO PARA GUARDAR EL NOMBRE DEL USUARIO
+  const [nombreUsuario, setNombreUsuario] = useState('Estudiante');
+
   const opcionesFecha: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
   const fechaHoyStr = new Date().toLocaleDateString('es-ES', opcionesFecha).toUpperCase();
 
-  // Helper para convertir hora (Ej: "08:30") a minutos totales desde la medianoche
   const convertirAMinutos = (horaStr: string) => {
     if (!horaStr || !horaStr.includes(':')) return 0;
     const [h, m] = horaStr.split(':');
@@ -35,27 +40,22 @@ export default function Index() {
       const diaHoyString = diasSemana[jsDay];
       const diaMananaString = diasSemana[(jsDay + 1) % 7];
 
-      // 1. Buscamos clases que sean HOY y que aún no hayan pasado
       let clasesCandidatas = bloquesHorario
         .filter((b: any) => b.dia === diaHoyString && convertirAMinutos(b.horaInicio) > minutosActuales)
         .map((b: any) => ({ ...b, diffMinutos: convertirAMinutos(b.horaInicio) - minutosActuales }));
 
-      // 2. Si ya no hay clases hoy, buscamos las primeras clases de MAÑANA
       if (clasesCandidatas.length === 0) {
         clasesCandidatas = bloquesHorario
           .filter((b: any) => b.dia === diaMananaString)
           .map((b: any) => ({
             ...b,
-            // Calculamos los minutos restantes hasta la medianoche + los minutos de la clase de mañana
             diffMinutos: (24 * 60 - minutosActuales) + convertirAMinutos(b.horaInicio)
           }));
       }
 
-      // Ordenamos para encontrar la clase más próxima
       clasesCandidatas.sort((a: any, b: any) => a.diffMinutos - b.diffMinutos);
       const proximo = clasesCandidatas.length > 0 ? clasesCandidatas[0] : null;
 
-      // 3. REGLA DE LAS 10 HORAS (600 minutos)
       if (proximo && proximo.diffMinutos <= 600) {
         setEventoProximo(proximo);
 
@@ -67,7 +67,6 @@ export default function Index() {
           setTiempoRestante(`En ${horas}h ${mins}m`);
         }
       } else {
-        // Si no hay clases próximas o están a más de 10 horas, se mantiene en reposo
         setEventoProximo(null);
         setTiempoRestante(null);
       }
@@ -78,22 +77,35 @@ export default function Index() {
     return () => clearInterval(intervalo);
   }, [bloquesHorario]);
 
-  // --- LÓGICA DEL EVENTO MÁS CERCANO DEL CALENDARIO ---
   const eventoAgendaProximo = eventosGlobales && eventosGlobales.length > 0
     ? [...eventosGlobales]
       .filter(ev => ev && ev.timestamp)
       .sort((a, b) => a.timestamp - b.timestamp)[0]
     : null;
 
+  const hoyStr = new Date().toLocaleDateString('es-ES');
+  const tareasDeHoy = tareasGlobales ? tareasGlobales.filter((t: any) => t.fechaCreacion === hoyStr) : [];
+
+  const tareasCompletadas = tareasDeHoy.filter((t: any) => t.completada).length;
+  const tareasTotal = tareasDeHoy.length;
+  const tareasPendientes = tareasTotal - tareasCompletadas;
+
+  let estadoTareas = 'vacio';
+  if (tareasTotal > 0 && tareasPendientes > 0) estadoTareas = 'pendientes';
+  if (tareasTotal > 0 && tareasPendientes === 0) estadoTareas = 'completadas';
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="auto" />
 
-      {/* CABECERA */}
+      {/* RENDERIZAMOS EL MODAL DE BIENVENIDA */}
+      <Bienvenida onCompletado={setNombreUsuario} />
+
       <View style={styles.header}>
         <View>
           <Text style={styles.fecha}>{fechaHoyStr}</Text>
-          <Text style={styles.saludo}>Hola, Felipe 👋</Text>
+          {/* USAMOS LA VARIABLE nombreUsuario EN LUGAR DE "Felipe" */}
+          <Text style={styles.saludo}>Hola, {nombreUsuario} 👋</Text>
         </View>
         <Ionicons name="notifications-outline" size={28} color="#475569" />
       </View>
@@ -102,9 +114,7 @@ export default function Index() {
 
         <View style={styles.gridContainer}>
 
-          {/* Fila 1 */}
           <View style={styles.row}>
-            {/* Notas Rápidas */}
             <TouchableOpacity style={[styles.gridItem, styles.bgNotes]} activeOpacity={0.8} onPress={() => router.push('/apuntes')}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconCircleRed}>
@@ -117,7 +127,6 @@ export default function Index() {
               </View>
             </TouchableOpacity>
 
-            {/* Próxima Clase (Horario) */}
             <TouchableOpacity style={[styles.gridItem, styles.bgEvent]} activeOpacity={0.8} onPress={() => router.push('/horario')}>
               {tiempoRestante && (
                 <View style={styles.badgeTopContainer}>
@@ -140,29 +149,40 @@ export default function Index() {
             </TouchableOpacity>
           </View>
 
-          {/* Fila 2 */}
           <View style={styles.row}>
-            {/* Tareas / Pendientes */}
-            <TouchableOpacity style={[styles.gridItem, styles.bgTasks]} activeOpacity={0.8}>
+            <TouchableOpacity style={[styles.gridItem, styles.bgTasks]} activeOpacity={0.8} onPress={() => router.push('/enfoque')}>
               <View style={styles.iconWrapper}>
-                <View style={styles.iconCircleGreen}>
-                  <Ionicons name="checkbox" size={32} color="#10b981" />
-                </View>
+                {estadoTareas === 'vacio' && (
+                  <View style={styles.iconCircleGray}>
+                    <Ionicons name="list" size={32} color="#64748b" />
+                  </View>
+                )}
+                {estadoTareas === 'pendientes' && (
+                  <View style={styles.iconCircleOrange}>
+                    <Ionicons name="checkbox-outline" size={32} color="#f59e0b" />
+                  </View>
+                )}
+                {estadoTareas === 'completadas' && (
+                  <View style={styles.iconCircleGreen}>
+                    <Ionicons name="checkmark-done-circle" size={32} color="#10b981" />
+                  </View>
+                )}
               </View>
               <View style={styles.textWrapper}>
                 <Text style={styles.gridTitle}>Tareas</Text>
-                <Text style={styles.gridSubtitle}>0 pendientes</Text>
+                {estadoTareas === 'vacio' && <Text style={styles.gridSubtitle}>Ninguna para hoy</Text>}
+                {estadoTareas === 'pendientes' && <Text style={[styles.gridSubtitle, { color: '#f59e0b', fontWeight: 'bold' }]}>{tareasPendientes} pendientes</Text>}
+                {estadoTareas === 'completadas' && <Text style={[styles.gridSubtitle, { color: '#10b981', fontWeight: 'bold' }]}>¡Todo listo!</Text>}
               </View>
             </TouchableOpacity>
 
-            {/* WIDGET DE EVENTO CERCANO */}
             <TouchableOpacity style={[styles.gridItem, styles.bgEvents]} activeOpacity={0.8} onPress={() => router.push('/eventos')}>
               <View style={styles.badgeTopContainer}>
                 <Text style={styles.smallBadgeTop}>Evento cercano</Text>
               </View>
               <View style={styles.iconWrapper}>
-                <View style={[styles.iconCircleOrange, eventoAgendaProximo && { backgroundColor: eventoAgendaProximo.color + '20' }]}>
-                  <Ionicons name={eventoAgendaProximo ? (eventoAgendaProximo.icono as any) : "calendar"} size={32} color={eventoAgendaProximo ? eventoAgendaProximo.color : "#f59e0b"} />
+                <View style={[styles.iconCircleYellow, eventoAgendaProximo && { backgroundColor: eventoAgendaProximo.color + '20' }]}>
+                  <Ionicons name={eventoAgendaProximo ? (eventoAgendaProximo.icono as any) : "calendar"} size={32} color={eventoAgendaProximo ? eventoAgendaProximo.color : "#eab308"} />
                 </View>
               </View>
               <View style={styles.textWrapper}>
@@ -176,9 +196,8 @@ export default function Index() {
             </TouchableOpacity>
           </View>
 
-          {/* Fila 3 */}
           <View style={styles.row}>
-            <TouchableOpacity style={[styles.gridItem, styles.bgStats]} activeOpacity={0.8} onPress={() => router.push('/ramos')}>
+            <TouchableOpacity style={[styles.gridItem, styles.bgStats]} activeOpacity={0.8} onPress={() => router.push('/rendimiento')}>
               <View style={styles.iconWrapper}>
                 <View style={styles.iconCirclePurple}>
                   <Ionicons name="bar-chart" size={32} color="#8b5cf6" />
@@ -324,5 +343,6 @@ const styles = StyleSheet.create({
   iconCircleGreen: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#d1fae5', justifyContent: 'center', alignItems: 'center' },
   iconCirclePurple: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#ede9fe', justifyContent: 'center', alignItems: 'center' },
   iconCircleOrange: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fef3c7', justifyContent: 'center', alignItems: 'center' },
+  iconCircleYellow: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#fef9c3', justifyContent: 'center', alignItems: 'center' },
   iconCircleGray: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
 });
