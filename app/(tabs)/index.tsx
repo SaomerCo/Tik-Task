@@ -6,9 +6,9 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
-
-// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA
+// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA Y LAS NOTIFICACIONES
 import Bienvenida from '../../components/Bienvenida';
+import { sincronizarNotificaciones, solicitarPermisosNotificaciones } from '../../utils/Notificaciones';
 
 export default function Index() {
   const router = useRouter();
@@ -75,6 +75,18 @@ export default function Index() {
     return () => clearInterval(intervalo);
   }, [bloquesHorario]);
 
+  // ── Sincronizador Automático de Notificaciones ─────────────────────────
+  useEffect(() => {
+    const setupAlertas = async () => {
+      const permisoConcedido = await solicitarPermisosNotificaciones();
+      if (permisoConcedido) {
+        await sincronizarNotificaciones(bloquesHorario || [], eventosGlobales || []);
+      }
+    };
+    setupAlertas();
+  }, [bloquesHorario, eventosGlobales]);
+  // ───────────────────────────────────────────────────────────────────────
+
   const eventoAgendaProximo = eventosGlobales && eventosGlobales.length > 0
     ? [...eventosGlobales]
       .filter(ev => ev && ev.timestamp)
@@ -120,7 +132,14 @@ export default function Index() {
         <Ionicons name="notifications-outline" size={28} color={colors.textSecondary} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        // ────────────────────────────────────────────────────────
+        // ESTA ES LA MEJORA AGREGADA: EVITA EL PARPADEO
+        removeClippedSubviews={false}
+      // ────────────────────────────────────────────────────────
+      >
         <View style={styles.gridContainer}>
 
           <View style={styles.row}>
@@ -368,7 +387,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
-  // Círculo de ícono genérico (color inyectado inline)
   iconCircle: {
     width: 56,
     height: 56,

@@ -145,11 +145,12 @@ export default function ApuntesScreen() {
     return (
         <View style={s.mainContainer}>
 
-            <Encabezado
-                titulo="Tus Apuntes"
-                subtitulo={`${apuntesGlobales.length} notas guardadas`}
+        <Encabezado
+                label="BIBLIOTECA"
+                titulo="Apuntes"
+                subtitulo="Ideas y resúmenes"
                 icono="document-text"
-                colorActivo={colors.danger} // Color rojo para apuntes
+                colorActivo={colors.danger}
             />
 
             <View style={{ paddingBottom: 10 }}>

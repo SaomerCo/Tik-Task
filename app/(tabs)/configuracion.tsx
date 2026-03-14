@@ -61,8 +61,9 @@ export default function Configuracion() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
       <Encabezado
-        titulo="Configuración"
-        subtitulo="Personaliza tu experiencia"
+        label="SISTEMA"
+        titulo="Ajustes"
+        subtitulo="Personaliza tu app"
         icono="settings"
         colorActivo={colors.primary}
       />

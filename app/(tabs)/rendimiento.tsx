@@ -43,8 +43,9 @@ export default function RendimientoScreen() {
         <SafeAreaView style={s.container}>
 
             <Encabezado
-                titulo="Rendimiento"
-                subtitulo="Tu progreso analizado"
+                label="ANALÍTICA"
+                titulo="Progreso"
+                subtitulo="Métricas académicas"
                 icono="stats-chart"
                 colorActivo={colors.primary}
             />

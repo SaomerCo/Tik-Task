@@ -75,8 +75,9 @@ export default function HorarioScreen() {
     return (
       <View style={s.mainContainer}>
         <Encabezado
-          titulo="Tu Horario"
-          subtitulo="Organiza tu semana"
+          label="AGENDA"
+          titulo="Horario"
+          subtitulo="Tu semana organizada"
           icono="calendar"
           colorActivo={colors.primary}
         />
@@ -217,12 +218,13 @@ export default function HorarioScreen() {
       <View style={s.headerContainer}>
         <View style={s.headerFlex}>
           {/* USAMOS EL NUEVO ENCABEZADO SOLO PARA EL TÍTULO */}
-          <Encabezado
-            titulo="Tu Horario"
-            subtitulo="Organiza tu semana"
-            icono="calendar"
-            colorActivo={colors.primary}
-          />
+        <Encabezado
+          label="AGENDA"
+          titulo="Horario"
+          subtitulo="Tu semana organizada"
+          icono="calendar"
+          colorActivo={colors.primary}
+        />
           <View style={{ position: 'absolute', right: 20, top: 40 }}>
             {modoEdicion ? (
               <TouchableOpacity style={[s.btnHecho, { backgroundColor: isDark ? colors.primary + '20' : '#eff6ff' }]} onPress={() => setModoEdicion(false)}>

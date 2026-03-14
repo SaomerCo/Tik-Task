@@ -197,8 +197,9 @@ export default function EventosScreen() {
     <View style={s.mainContainer}>
 
       <Encabezado
-        titulo="Tus Eventos"
-        subtitulo={`${eventosOrdenados.length} eventos programados`}
+        label="CALENDARIO"
+        titulo="Eventos"
+        subtitulo="Fechas y evaluaciones"
         icono="notifications"
         colorActivo={colors.warning}
       />

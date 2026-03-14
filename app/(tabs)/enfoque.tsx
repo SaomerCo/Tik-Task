@@ -181,10 +181,11 @@ export default function EnfoqueScreen() {
     <SafeAreaView style={s.container}>
 
       <Encabezado
+        label="POMODORO"
         titulo="Enfoque"
-        subtitulo="Domina tu tiempo y hábitos"
+        subtitulo="Sesiones de estudio"
         icono="timer"
-        colorActivo={colors.success} // Usamos verde/success para esta pantalla
+        colorActivo={colors.success}
       />
 
       {!sesionIniciada && (

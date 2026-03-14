@@ -2,36 +2,42 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+// IMPORTAMOS TU TEMA
 import { useTheme } from '../../context/ThemeContext';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
-  const { colors, themeMode } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <Tabs
-      key={themeMode}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.tabBarActive,
-        tabBarInactiveTintColor: colors.tabBarInactive,
+        // OPTIMIZACIÓN 1: Congela las pantallas ocultas para máxima fluidez
+        freezeOnBlur: true,
+        // OPTIMIZACIÓN 2: Oculta la barra al abrir el teclado (mejora el rendimiento al escribir)
+        tabBarHideOnKeyboard: true,
+
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+
         tabBarStyle: {
-          backgroundColor: colors.tabBarBackground,
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: colors.tabBarBorder,
-          elevation: 0,
-          shadowOpacity: 0,
+          borderTopColor: colors.border,
+          elevation: isDark ? 0 : 8, // Quita la sombra en modo oscuro para un look más limpio
+          shadowOpacity: isDark ? 0 : 0.1,
           height: 65 + insets.bottom,
           paddingBottom: insets.bottom + 5,
           paddingTop: 5,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '500',
-        },
+          fontWeight: '600',
+        }
       }}
     >
-      {/* 1. Ramos */}
       <Tabs.Screen
         name="ramos"
         options={{
@@ -40,16 +46,14 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 2. Apuntes */}
       <Tabs.Screen
         name="apuntes"
         options={{
           title: 'Apuntes',
-          tabBarIcon: ({ color }) => <Ionicons name="pencil" size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
         }}
       />
 
-      {/* 3. Horario */}
       <Tabs.Screen
         name="horario"
         options={{
@@ -58,7 +62,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 4. Inicio (Centro) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -67,7 +70,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 5. Eventos */}
       <Tabs.Screen
         name="eventos"
         options={{
@@ -76,7 +78,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 6. Estudio (Enfoque) */}
       <Tabs.Screen
         name="enfoque"
         options={{
@@ -85,21 +86,19 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 7. Rendimiento */}
       <Tabs.Screen
         name="rendimiento"
         options={{
-          title: 'Rendimiento',
+          title: 'Progreso',
           tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={24} color={color} />,
         }}
       />
 
-      {/* 8. Configuración */}
+      {/* Añadimos la pestaña de configuración pero la ocultamos de la barra inferior */}
       <Tabs.Screen
         name="configuracion"
         options={{
-          title: 'Config.',
-          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
+          href: null, // Esto hace que exista en el enrutador pero no aparezca un botón extra abajo
         }}
       />
     </Tabs>

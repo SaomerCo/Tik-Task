@@ -1,8 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-
-// Importamos el hook de nuestro nuevo sistema de temas
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface EncabezadoProps {
@@ -13,14 +11,11 @@ interface EncabezadoProps {
 }
 
 export default function Encabezado({ titulo, subtitulo, icono, colorActivo }: EncabezadoProps) {
-    // Obtenemos los colores dinámicos y si estamos en modo oscuro
     const { colors, isDark } = useTheme();
 
-    // Si no pasamos un color, usamos el primario por defecto
-    const iconColor = colorActivo || colors.primary;
-
-    // Creamos los estilos inyectando los colores actuales
-    const s = buildStyles(colors, isDark, iconColor);
+    // Usamos el color primario si no se pasa uno específico
+    const themeColor = colorActivo || colors.primary;
+    const s = buildStyles(colors, isDark, themeColor);
 
     return (
         <View style={s.container}>
@@ -29,55 +24,70 @@ export default function Encabezado({ titulo, subtitulo, icono, colorActivo }: En
                 <Text style={s.subtitle}>{subtitulo}</Text>
             </View>
 
+            {/* Contenedor del ícono estilo "Squircle" (iOS) con fondo translúcido */}
             <View style={s.iconWrapper}>
-                <Ionicons name={icono} size={28} color={iconColor} />
+                <Ionicons name={icono} size={28} color={themeColor} style={s.iconShadow} />
             </View>
         </View>
     );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estilos dinámicos
+// Estilos Premium (Neumorfismo Sutil / iOS Style)
 // ─────────────────────────────────────────────────────────────────────────────
-function buildStyles(colors: any, isDark: boolean, iconColor: string) {
+function buildStyles(colors: any, isDark: boolean, themeColor: string) {
     return StyleSheet.create({
         container: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            paddingTop: 25,
+            paddingHorizontal: 24,
+            paddingTop: Platform.OS === 'ios' ? 10 : 30,
             paddingBottom: 20,
-            // Usamos el fondo dinámico del tema
-            backgroundColor: colors.background,
+            backgroundColor: 'transparent', // Para que se fusione con el SafeAreaView
         },
         textContainer: {
             flex: 1,
-            paddingRight: 15,
+            paddingRight: 20,
         },
         title: {
-            fontSize: 32,
-            fontWeight: '900', // Letra extra gruesa para destacar
+            fontSize: 34, // Más grande y contundente
+            fontWeight: '900', // Extra bold para jerarquía de revista
             color: colors.text,
-            letterSpacing: -0.5,
+            letterSpacing: -1, // Letras más juntas (estilo moderno)
+            marginBottom: 4,
         },
         subtitle: {
             fontSize: 15,
             color: colors.textSecondary,
-            marginTop: 4,
             fontWeight: '500',
+            letterSpacing: 0.2,
+            opacity: isDark ? 0.8 : 1, // Suavizamos un poco en modo oscuro
         },
         iconWrapper: {
-            width: 56,
-            height: 56,
-            borderRadius: 18, // Cuadrado estilo iOS
+            width: 54,
+            height: 54,
+            borderRadius: 18, // Borde muy suave
             justifyContent: 'center',
             alignItems: 'center',
-            // Magia: Usamos el color activo pero le añadimos transparencia ('20' o '15' en Hex)
-            backgroundColor: isDark ? iconColor + '20' : iconColor + '15',
-            // Un borde sutil en modo oscuro le da un toque muy elegante
-            borderWidth: isDark ? 1 : 0,
-            borderColor: isDark ? colors.border : 'transparent',
+            // Magia del color translúcido: 20% de opacidad en modo claro, 30% en oscuro
+            backgroundColor: isDark ? themeColor + '30' : themeColor + '20',
+            borderWidth: 1,
+            // Borde brillante sutil en modo oscuro
+            borderColor: isDark ? themeColor + '50' : 'transparent',
+
+            // Sombra muy suave para que el botón "flote" un poco
+            shadowColor: themeColor,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.2 : 0.1,
+            shadowRadius: 8,
+            elevation: 4,
+        },
+        iconShadow: {
+            // Le da un toque "glowing" (brillante) al ícono en sí
+            textShadowColor: isDark ? themeColor + '80' : 'transparent',
+            textShadowOffset: { width: 0, height: 0 },
+            textShadowRadius: 8,
         }
     });
 }

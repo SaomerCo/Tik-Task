@@ -260,8 +260,9 @@ export default function RamosScreen() {
 
       {/* NUEVO ENCABEZADO CON TEMA */}
       <Encabezado
-        titulo="Tus Ramos"
-        subtitulo="Expediente Académico"
+        label="ACADÉMICO"
+        titulo="Ramos"
+        subtitulo="Gestión de materias"
         icono="school"
         colorActivo={colors.primary}
       />
