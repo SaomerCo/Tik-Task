@@ -1,91 +1,83 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+
+// Importamos el hook de nuestro nuevo sistema de temas
+import { useTheme } from '../context/ThemeContext';
 
 interface EncabezadoProps {
     titulo: string;
     subtitulo: string;
     icono: keyof typeof Ionicons.glyphMap;
     colorActivo?: string;
-    mostrarBotonAtras?: boolean;
-    onVolver?: () => void;
 }
 
-export default function Encabezado({
-    titulo,
-    subtitulo,
-    icono,
-    colorActivo = '#1a73e8',
-    mostrarBotonAtras = false,
-    onVolver
-}: EncabezadoProps) {
+export default function Encabezado({ titulo, subtitulo, icono, colorActivo }: EncabezadoProps) {
+    // Obtenemos los colores dinámicos y si estamos en modo oscuro
+    const { colors, isDark } = useTheme();
+
+    // Si no pasamos un color, usamos el primario por defecto
+    const iconColor = colorActivo || colors.primary;
+
+    // Creamos los estilos inyectando los colores actuales
+    const s = buildStyles(colors, isDark, iconColor);
+
     return (
-        <View style={styles.headerContainer}>
-            <View style={styles.seccionIzquierda}>
-
-                {mostrarBotonAtras ? (
-                    <TouchableOpacity onPress={onVolver} style={styles.btnVolver}>
-                        <Ionicons name="arrow-back" size={24} color="#334155" />
-                    </TouchableOpacity>
-                ) : (
-                    <View style={[styles.cajaIcono, { backgroundColor: colorActivo + '1A' }]}>
-                        <Ionicons name={icono} size={26} color={colorActivo} />
-                    </View>
-                )}
-
-                <View>
-                    <Text style={styles.tituloPrincipal}>{titulo}</Text>
-                    <Text style={styles.subtitulo}>{subtitulo}</Text>
-                </View>
+        <View style={s.container}>
+            <View style={s.textContainer}>
+                <Text style={s.title}>{titulo}</Text>
+                <Text style={s.subtitle}>{subtitulo}</Text>
             </View>
 
-            <TouchableOpacity activeOpacity={0.7}>
-                <Ionicons name="person-circle" size={44} color="#cbd5e1" />
-            </TouchableOpacity>
+            <View style={s.iconWrapper}>
+                <Ionicons name={icono} size={28} color={iconColor} />
+            </View>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
-    headerContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingTop: 20,
-        paddingBottom: 15,
-    },
-    seccionIzquierda: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    cajaIcono: {
-        width: 48,
-        height: 48,
-        borderRadius: 16,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    btnVolver: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        backgroundColor: '#f1f5f9',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 5,
-    },
-    tituloPrincipal: {
-        fontSize: 24,
-        fontWeight: '900',
-        color: '#0f172a',
-        letterSpacing: -0.5,
-    },
-    subtitulo: {
-        fontSize: 13,
-        color: '#64748b',
-        fontWeight: '500',
-        marginTop: 2,
-    },
-});
+// ─────────────────────────────────────────────────────────────────────────────
+// Estilos dinámicos
+// ─────────────────────────────────────────────────────────────────────────────
+function buildStyles(colors: any, isDark: boolean, iconColor: string) {
+    return StyleSheet.create({
+        container: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingTop: 25,
+            paddingBottom: 20,
+            // Usamos el fondo dinámico del tema
+            backgroundColor: colors.background,
+        },
+        textContainer: {
+            flex: 1,
+            paddingRight: 15,
+        },
+        title: {
+            fontSize: 32,
+            fontWeight: '900', // Letra extra gruesa para destacar
+            color: colors.text,
+            letterSpacing: -0.5,
+        },
+        subtitle: {
+            fontSize: 15,
+            color: colors.textSecondary,
+            marginTop: 4,
+            fontWeight: '500',
+        },
+        iconWrapper: {
+            width: 56,
+            height: 56,
+            borderRadius: 18, // Cuadrado estilo iOS
+            justifyContent: 'center',
+            alignItems: 'center',
+            // Magia: Usamos el color activo pero le añadimos transparencia ('20' o '15' en Hex)
+            backgroundColor: isDark ? iconColor + '20' : iconColor + '15',
+            // Un borde sutil en modo oscuro le da un toque muy elegante
+            borderWidth: isDark ? 1 : 0,
+            borderColor: isDark ? colors.border : 'transparent',
+        }
+    });
+}

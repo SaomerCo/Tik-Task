@@ -5,9 +5,17 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../context/AppContext';
 
+// IMPORTACIONES DEL TEMA Y ENCABEZADO
+import Encabezado from '../../components/Encabezado';
+import { useTheme } from '../../context/ThemeContext';
+
 export default function ApuntesScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
+
+    // EXTRAEMOS LOS COLORES DEL TEMA
+    const { colors, isDark } = useTheme();
+    const s = buildStyles(colors, isDark);
 
     const { ramosGlobales, apuntesGlobales, agregarApunte, actualizarApunte, eliminarApunte } = useAppContext();
 
@@ -124,9 +132,9 @@ export default function ApuntesScreen() {
     };
 
     const obtenerInfoRamo = (rId: string) => {
-        if (rId === 'general') return { nombre: 'General', color: '#64748b' };
+        if (rId === 'general') return { nombre: 'General', color: colors.textSecondary };
         const ramo = ramosGlobales.find((r: any) => r.id === rId);
-        return ramo ? { nombre: ramo.nombre, color: ramo.colorHex } : { nombre: 'Desconocido', color: '#94a3b8' };
+        return ramo ? { nombre: ramo.nombre, color: ramo.colorHex } : { nombre: 'Desconocido', color: colors.textSecondary };
     };
 
     const irAEventos = () => {
@@ -135,74 +143,77 @@ export default function ApuntesScreen() {
     };
 
     return (
-        <View style={styles.mainContainer}>
-            <View style={styles.headerContainer}>
-                <Text style={styles.tituloPrincipal}>Tus Apuntes</Text>
-                <Text style={styles.subtitulo}>{apuntesGlobales.length} notas guardadas</Text>
-            </View>
+        <View style={s.mainContainer}>
+
+            <Encabezado
+                titulo="Tus Apuntes"
+                subtitulo={`${apuntesGlobales.length} notas guardadas`}
+                icono="document-text"
+                colorActivo={colors.danger} // Color rojo para apuntes
+            />
 
             <View style={{ paddingBottom: 10 }}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtrosContainer}>
-                    <TouchableOpacity style={[styles.filtroPildora, filtroActual === 'todos' && styles.filtroActivo]} onPress={() => setFiltroActual('todos')}>
-                        <Text style={[styles.filtroTexto, filtroActual === 'todos' && styles.filtroTextoActivo]}>Todas</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtrosContainer}>
+                    <TouchableOpacity style={[s.filtroPildora, filtroActual === 'todos' && s.filtroActivo]} onPress={() => setFiltroActual('todos')}>
+                        <Text style={[s.filtroTexto, filtroActual === 'todos' && s.filtroTextoActivo]}>Todas</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.filtroPildora, filtroActual === 'general' && styles.filtroActivo]} onPress={() => setFiltroActual('general')}>
-                        <Text style={[styles.filtroTexto, filtroActual === 'general' && styles.filtroTextoActivo]}>Generales</Text>
+                    <TouchableOpacity style={[s.filtroPildora, filtroActual === 'general' && s.filtroActivo]} onPress={() => setFiltroActual('general')}>
+                        <Text style={[s.filtroTexto, filtroActual === 'general' && s.filtroTextoActivo]}>Generales</Text>
                     </TouchableOpacity>
 
                     {ramosGlobales.map((ramo: any) => (
                         <TouchableOpacity
                             key={ramo.id}
-                            style={[styles.filtroPildora, filtroActual === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]}
+                            style={[s.filtroPildora, filtroActual === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]}
                             onPress={() => setFiltroActual(ramo.id)}
                         >
-                            <Text style={[styles.filtroTexto, filtroActual === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
+                            <Text style={[s.filtroTexto, filtroActual === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
                         </TouchableOpacity>
                     ))}
                 </ScrollView>
             </View>
 
-            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+            <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
                 {apuntesFiltrados.length === 0 ? (
-                    <View style={styles.estadoVacio}>
-                        <View style={styles.iconoFondoVacio}><Ionicons name="document-text-outline" size={48} color="#94a3b8" /></View>
-                        <Text style={styles.textoVacio}>No hay apuntes aquí</Text>
-                        <Text style={styles.subtextoVacio}>Toca el botón + para crear una nota o tomar una foto de la pizarra.</Text>
+                    <View style={s.estadoVacio}>
+                        <View style={s.iconoFondoVacio}><Ionicons name="document-text-outline" size={48} color={colors.textSecondary} /></View>
+                        <Text style={s.textoVacio}>No hay apuntes aquí</Text>
+                        <Text style={s.subtextoVacio}>Toca el botón + para crear una nota o tomar una foto de la pizarra.</Text>
                     </View>
                 ) : (
-                    <View style={styles.gridNotas}>
+                    <View style={s.gridNotas}>
                         {apuntesFiltrados.map((apunte: any) => {
                             const infoRamo = obtenerInfoRamo(apunte.ramoId);
                             const tieneFotos = apunte.imagenes && apunte.imagenes.length > 0;
 
                             return (
-                                <TouchableOpacity key={apunte.id} style={styles.tarjetaNota} onPress={() => abrirModalEdicion(apunte)} activeOpacity={0.7}>
-                                    <View style={styles.tarjetaHeader}>
-                                        <View style={[styles.badgeRamo, { backgroundColor: infoRamo.color + '15' }]}>
-                                            <Text style={[styles.badgeRamoTexto, { color: infoRamo.color }]} numberOfLines={1}>{infoRamo.nombre}</Text>
+                                <TouchableOpacity key={apunte.id} style={s.tarjetaNota} onPress={() => abrirModalEdicion(apunte)} activeOpacity={0.7}>
+                                    <View style={s.tarjetaHeader}>
+                                        <View style={[s.badgeRamo, { backgroundColor: isDark ? infoRamo.color + '30' : infoRamo.color + '15' }]}>
+                                            <Text style={[s.badgeRamoTexto, { color: isDark ? 'white' : infoRamo.color }]} numberOfLines={1}>{infoRamo.nombre}</Text>
                                         </View>
                                         <TouchableOpacity onPress={() => confirmarEliminacion(apunte.id)} style={{ padding: 2 }}>
-                                            <Ionicons name="trash-outline" size={16} color="#cbd5e1" />
+                                            <Ionicons name="trash-outline" size={16} color={colors.danger} />
                                         </TouchableOpacity>
                                     </View>
 
-                                    <Text style={styles.tituloNotaTarjeta} numberOfLines={2}>{apunte.titulo}</Text>
-                                    {apunte.contenido ? <Text style={styles.contenidoNotaTarjeta} numberOfLines={3}>{apunte.contenido}</Text> : null}
+                                    <Text style={s.tituloNotaTarjeta} numberOfLines={2}>{apunte.titulo}</Text>
+                                    {apunte.contenido ? <Text style={s.contenidoNotaTarjeta} numberOfLines={3}>{apunte.contenido}</Text> : null}
 
                                     {tieneFotos && (
-                                        <View style={styles.imagenPreviewContainer}>
-                                            <Image source={{ uri: apunte.imagenes[0] }} style={styles.imagenPreview} />
+                                        <View style={s.imagenPreviewContainer}>
+                                            <Image source={{ uri: apunte.imagenes[0] }} style={s.imagenPreview} />
                                             {apunte.imagenes.length > 1 && (
-                                                <View style={styles.imagenOverlay}>
-                                                    <Text style={styles.imagenOverlayText}>+{apunte.imagenes.length - 1}</Text>
+                                                <View style={s.imagenOverlay}>
+                                                    <Text style={s.imagenOverlayText}>+{apunte.imagenes.length - 1}</Text>
                                                 </View>
                                             )}
                                         </View>
                                     )}
 
-                                    <View style={styles.footerTarjeta}>
-                                        <Text style={styles.fechaNotaTarjeta}>{apunte.fecha}</Text>
-                                        {tieneFotos && <Ionicons name="images" size={14} color="#94a3b8" />}
+                                    <View style={s.footerTarjeta}>
+                                        <Text style={s.fechaNotaTarjeta}>{apunte.fecha}</Text>
+                                        {tieneFotos && <Ionicons name="images" size={14} color={colors.textSecondary} />}
                                     </View>
                                 </TouchableOpacity>
                             );
@@ -212,55 +223,55 @@ export default function ApuntesScreen() {
                 <View style={{ height: 100 }} />
             </ScrollView>
 
-            <TouchableOpacity style={styles.fab} onPress={abrirModalNuevo}>
+            <TouchableOpacity style={s.fab} onPress={abrirModalNuevo}>
                 <Ionicons name="add" size={30} color="white" />
             </TouchableOpacity>
 
             <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeaderRow}>
-                            <Text style={styles.modalTitulo}>{notaEditandoId ? 'Editar Apunte' : 'Nuevo Apunte'}</Text>
+                <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.modalOverlay}>
+                    <View style={s.modalContent}>
+                        <View style={s.modalHeaderRow}>
+                            <Text style={s.modalTitulo}>{notaEditandoId ? 'Editar Apunte' : 'Nuevo Apunte'}</Text>
                             <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close-circle" size={28} color="#94a3b8" />
+                                <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
 
                             {!notaEditandoId && (
-                                <View style={styles.bannerSugerencia}>
-                                    <Ionicons name="bulb-outline" size={20} color="#1e40af" style={{ marginRight: 10, marginTop: 2 }} />
+                                <View style={s.bannerSugerencia}>
+                                    <Ionicons name="bulb-outline" size={20} color={colors.primary} style={{ marginRight: 10, marginTop: 2 }} />
                                     <View style={{ flex: 1 }}>
-                                        <Text style={styles.textoBannerSugerencia}>
+                                        <Text style={s.textoBannerSugerencia}>
                                             ¿Es una prueba, entrega de proyecto o cancelación de clase?
                                         </Text>
                                         <TouchableOpacity onPress={irAEventos} style={{ marginTop: 4 }}>
-                                            <Text style={styles.linkBannerSugerencia}>Mejor crea un Evento aquí &rarr;</Text>
+                                            <Text style={s.linkBannerSugerencia}>Mejor crea un Evento aquí &rarr;</Text>
                                         </TouchableOpacity>
                                     </View>
                                 </View>
                             )}
 
-                            <Text style={styles.label}>Vincular a:</Text>
-                            <TouchableOpacity style={styles.dropdownButton} onPress={() => setMostrarDropdown(!mostrarDropdown)}>
+                            <Text style={s.label}>Vincular a:</Text>
+                            <TouchableOpacity style={s.dropdownButton} onPress={() => setMostrarDropdown(!mostrarDropdown)}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <View style={[styles.colorDot, { backgroundColor: obtenerInfoRamo(ramoVinculadoId).color }]} />
-                                    <Text style={styles.dropdownButtonText}>{obtenerInfoRamo(ramoVinculadoId).nombre}</Text>
+                                    <View style={[s.colorDot, { backgroundColor: obtenerInfoRamo(ramoVinculadoId).color }]} />
+                                    <Text style={s.dropdownButtonText}>{obtenerInfoRamo(ramoVinculadoId).nombre}</Text>
                                 </View>
-                                <Ionicons name={mostrarDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748b" />
+                                <Ionicons name={mostrarDropdown ? "chevron-up" : "chevron-down"} size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
 
                             {mostrarDropdown && (
-                                <View style={styles.dropdownListContainer}>
-                                    <TouchableOpacity style={styles.dropdownItem} onPress={() => { setRamoVinculadoId('general'); setMostrarDropdown(false); }}>
-                                        <View style={[styles.colorDot, { backgroundColor: '#64748b' }]} />
-                                        <Text style={styles.dropdownItemText}>General (Sin ramo)</Text>
+                                <View style={s.dropdownListContainer}>
+                                    <TouchableOpacity style={s.dropdownItem} onPress={() => { setRamoVinculadoId('general'); setMostrarDropdown(false); }}>
+                                        <View style={[s.colorDot, { backgroundColor: colors.textSecondary }]} />
+                                        <Text style={s.dropdownItemText}>General (Sin ramo)</Text>
                                     </TouchableOpacity>
                                     {ramosGlobales.map((ramo: any) => (
-                                        <TouchableOpacity key={ramo.id} style={styles.dropdownItem} onPress={() => { setRamoVinculadoId(ramo.id); setMostrarDropdown(false); }}>
-                                            <View style={[styles.colorDot, { backgroundColor: ramo.colorHex }]} />
-                                            <Text style={styles.dropdownItemText}>{ramo.nombre}</Text>
+                                        <TouchableOpacity key={ramo.id} style={s.dropdownItem} onPress={() => { setRamoVinculadoId(ramo.id); setMostrarDropdown(false); }}>
+                                            <View style={[s.colorDot, { backgroundColor: ramo.colorHex }]} />
+                                            <Text style={s.dropdownItemText}>{ramo.nombre}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>
@@ -268,29 +279,29 @@ export default function ApuntesScreen() {
 
                             <View style={{ marginTop: 15 }}>
                                 <TextInput
-                                    style={styles.inputTituloGordo}
+                                    style={s.inputTituloGordo}
                                     placeholder="Título de la nota..."
                                     value={tituloNota}
                                     onChangeText={setTituloNota}
-                                    placeholderTextColor="#94a3b8"
+                                    placeholderTextColor={colors.textSecondary}
                                 />
                                 <TextInput
-                                    style={styles.inputContenidoArea}
+                                    style={s.inputContenidoArea}
                                     placeholder="Escribe tus apuntes, ideas o tareas aquí..."
                                     value={contenidoNota}
                                     onChangeText={setContenidoNota}
                                     multiline={true}
                                     textAlignVertical="top"
-                                    placeholderTextColor="#94a3b8"
+                                    placeholderTextColor={colors.textSecondary}
                                 />
                             </View>
 
                             {imagenesNota.length > 0 && (
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.galeriaContainer}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.galeriaContainer}>
                                     {imagenesNota.map((uri, index) => (
-                                        <View key={index} style={styles.imagenWrapper}>
-                                            <Image source={{ uri }} style={styles.imagenMiniatura} />
-                                            <TouchableOpacity style={styles.btnEliminarImagen} onPress={() => eliminarImagen(index)}>
+                                        <View key={index} style={s.imagenWrapper}>
+                                            <Image source={{ uri }} style={s.imagenMiniatura} />
+                                            <TouchableOpacity style={s.btnEliminarImagen} onPress={() => eliminarImagen(index)}>
                                                 <Ionicons name="close" size={16} color="white" />
                                             </TouchableOpacity>
                                         </View>
@@ -298,19 +309,19 @@ export default function ApuntesScreen() {
                                 </ScrollView>
                             )}
 
-                            <View style={styles.adjuntarContainer}>
-                                <TouchableOpacity style={styles.btnAdjuntar} onPress={tomarFoto}>
-                                    <Ionicons name="camera" size={20} color="#1a73e8" />
-                                    <Text style={styles.textoAdjuntar}>Tomar Foto</Text>
+                            <View style={s.adjuntarContainer}>
+                                <TouchableOpacity style={s.btnAdjuntar} onPress={tomarFoto}>
+                                    <Ionicons name="camera" size={20} color={colors.primary} />
+                                    <Text style={[s.textoAdjuntar, { color: colors.primary }]}>Tomar Foto</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={styles.btnAdjuntar} onPress={elegirDeGaleria}>
-                                    <Ionicons name="image" size={20} color="#10b981" />
-                                    <Text style={[styles.textoAdjuntar, { color: '#10b981' }]}>Galería</Text>
+                                <TouchableOpacity style={s.btnAdjuntar} onPress={elegirDeGaleria}>
+                                    <Ionicons name="image" size={20} color={colors.success} />
+                                    <Text style={[s.textoAdjuntar, { color: colors.success }]}>Galería</Text>
                                 </TouchableOpacity>
                             </View>
 
-                            <TouchableOpacity style={styles.btnGuardarFull} onPress={guardarApunte}>
-                                <Text style={styles.btnGuardarTextoFull}>Guardar Apunte</Text>
+                            <TouchableOpacity style={s.btnGuardarFull} onPress={guardarApunte}>
+                                <Text style={s.btnGuardarTextoFull}>Guardar Apunte</Text>
                             </TouchableOpacity>
                             <View style={{ height: 20 }} />
                         </ScrollView>
@@ -321,71 +332,73 @@ export default function ApuntesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    mainContainer: { flex: 1, backgroundColor: '#f8fafc' },
-    headerContainer: { backgroundColor: 'white', paddingTop: 60, paddingBottom: 15, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    tituloPrincipal: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
-    subtitulo: { fontSize: 14, color: '#64748b', marginTop: 2 },
+// ─────────────────────────────────────────────────────────────────────────────
+// Estilos Dinámicos (Integrando colores del tema)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildStyles(colors: any, isDark: boolean) {
+    return StyleSheet.create({
+        mainContainer: { flex: 1, backgroundColor: colors.background },
 
-    filtrosContainer: { paddingHorizontal: 20, paddingTop: 15, gap: 10 },
-    filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0' },
-    filtroActivo: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
-    filtroTexto: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-    filtroTextoActivo: { color: 'white' },
+        filtrosContainer: { paddingHorizontal: 20, paddingTop: 15, gap: 10 },
+        filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : 'white', borderWidth: 1, borderColor: colors.border },
+        filtroActivo: { backgroundColor: colors.text, borderColor: colors.text },
+        filtroTexto: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+        filtroTextoActivo: { color: colors.background },
 
-    container: { flex: 1, paddingHorizontal: 15, paddingTop: 10 },
-    gridNotas: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-    tarjetaNota: { width: '48%', backgroundColor: 'white', borderRadius: 16, padding: 15, marginBottom: 15, borderWidth: 1, borderColor: '#f1f5f9', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 5, elevation: 2 },
-    tarjetaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
-    badgeRamo: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, maxWidth: '80%' },
-    badgeRamoTexto: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
-    tituloNotaTarjeta: { fontSize: 16, fontWeight: 'bold', color: '#0f172a', marginBottom: 6 },
-    contenidoNotaTarjeta: { fontSize: 13, color: '#64748b', lineHeight: 18, marginBottom: 10 },
+        container: { flex: 1, paddingHorizontal: 15, paddingTop: 10 },
+        gridNotas: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+        tarjetaNota: { width: '48%', backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 15, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.03, shadowRadius: 5, elevation: isDark ? 0 : 2 },
+        tarjetaHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
+        badgeRamo: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, maxWidth: '80%' },
+        badgeRamoTexto: { fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase' },
+        tituloNotaTarjeta: { fontSize: 16, fontWeight: 'bold', color: colors.text, marginBottom: 6 },
+        contenidoNotaTarjeta: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 10 },
 
-    imagenPreviewContainer: { marginTop: 5, marginBottom: 10, borderRadius: 8, overflow: 'hidden', height: 80 },
-    imagenPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
-    imagenOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-    imagenOverlayText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+        imagenPreviewContainer: { marginTop: 5, marginBottom: 10, borderRadius: 8, overflow: 'hidden', height: 80 },
+        imagenPreview: { width: '100%', height: '100%', resizeMode: 'cover' },
+        imagenOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+        imagenOverlayText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 
-    footerTarjeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 5 },
-    fechaNotaTarjeta: { fontSize: 11, color: '#94a3b8' },
+        footerTarjeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: 5 },
+        fechaNotaTarjeta: { fontSize: 11, color: colors.textTertiary },
 
-    estadoVacio: { alignItems: 'center', marginTop: 80 },
-    iconoFondoVacio: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
-    textoVacio: { fontSize: 20, fontWeight: 'bold', color: '#64748b' },
-    subtextoVacio: { fontSize: 14, color: '#94a3b8', marginTop: 5, textAlign: 'center', paddingHorizontal: 40 },
+        estadoVacio: { alignItems: 'center', marginTop: 80 },
+        iconoFondoVacio: { width: 80, height: 80, borderRadius: 40, backgroundColor: isDark ? colors.surfaceSubtle : '#f1f5f9', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+        textoVacio: { fontSize: 20, fontWeight: 'bold', color: colors.textSecondary },
+        subtextoVacio: { fontSize: 14, color: colors.textTertiary, marginTop: 5, textAlign: 'center', paddingHorizontal: 40 },
 
-    fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#ef4444', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: '#ef4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+        fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: colors.danger, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: colors.danger, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-    modalContent: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, height: '85%' },
-    modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-    modalTitulo: { fontSize: 22, fontWeight: 'bold', color: '#0f172a' },
+        modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+        modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, height: '85%' },
+        modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+        modalTitulo: { fontSize: 22, fontWeight: 'bold', color: colors.text },
 
-    bannerSugerencia: { flexDirection: 'row', backgroundColor: '#eff6ff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#bfdbfe', marginBottom: 20 },
-    textoBannerSugerencia: { color: '#1e40af', fontSize: 13, lineHeight: 18 },
-    linkBannerSugerencia: { color: '#1d4ed8', fontSize: 13, fontWeight: 'bold' },
+        bannerSugerencia: { flexDirection: 'row', backgroundColor: isDark ? colors.primary + '20' : '#eff6ff', padding: 12, borderRadius: 10, borderWidth: 1, borderColor: isDark ? colors.border : '#bfdbfe', marginBottom: 20 },
+        textoBannerSugerencia: { color: isDark ? colors.text : '#1e40af', fontSize: 13, lineHeight: 18 },
+        linkBannerSugerencia: { color: colors.primary, fontSize: 13, fontWeight: 'bold' },
 
-    label: { fontSize: 14, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
-    dropdownButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f1f5f9', borderRadius: 12, padding: 15 },
-    dropdownButtonText: { fontSize: 15, color: '#334155', fontWeight: '600' },
-    colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
-    dropdownListContainer: { backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, marginTop: 5, maxHeight: 150, overflow: 'hidden' },
-    dropdownItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-    dropdownItemText: { fontSize: 15, color: '#334155' },
+        label: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary, marginBottom: 8 },
+        dropdownButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
+        dropdownButtonText: { fontSize: 15, color: colors.text, fontWeight: '600' },
+        colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
+        dropdownListContainer: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 12, marginTop: 5, maxHeight: 150, overflow: 'hidden' },
+        dropdownItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
+        dropdownItemText: { fontSize: 15, color: colors.text },
 
-    inputTituloGordo: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#f1f5f9', marginBottom: 15 },
-    inputContenidoArea: { fontSize: 16, color: '#334155', lineHeight: 24, minHeight: 80, marginBottom: 15 },
+        inputTituloGordo: { fontSize: 22, fontWeight: 'bold', color: colors.text, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 15 },
+        inputContenidoArea: { fontSize: 16, color: colors.text, lineHeight: 24, minHeight: 80, marginBottom: 15 },
 
-    adjuntarContainer: { flexDirection: 'row', gap: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: '#f1f5f9', paddingTop: 15 },
-    btnAdjuntar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', paddingHorizontal: 15, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0', flex: 1, justifyContent: 'center' },
-    textoAdjuntar: { marginLeft: 8, fontWeight: '600', color: '#1a73e8' },
+        adjuntarContainer: { flexDirection: 'row', gap: 10, marginTop: 10, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 15 },
+        btnAdjuntar: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? colors.background : '#f8fafc', paddingHorizontal: 15, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: colors.border, flex: 1, justifyContent: 'center' },
+        textoAdjuntar: { marginLeft: 8, fontWeight: '600' },
 
-    galeriaContainer: { flexDirection: 'row', marginTop: 10, marginBottom: 10 },
-    imagenWrapper: { width: 80, height: 80, marginRight: 10, borderRadius: 10, overflow: 'hidden' },
-    imagenMiniatura: { width: '100%', height: '100%', resizeMode: 'cover' },
-    btnEliminarImagen: { position: 'absolute', top: 5, right: 5, backgroundColor: 'rgba(0,0,0,0.6)', width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
+        galeriaContainer: { flexDirection: 'row', marginTop: 10, marginBottom: 10 },
+        imagenWrapper: { width: 80, height: 80, marginRight: 10, borderRadius: 10, overflow: 'hidden' },
+        imagenMiniatura: { width: '100%', height: '100%', resizeMode: 'cover' },
+        btnEliminarImagen: { position: 'absolute', top: 5, right: 5, backgroundColor: 'rgba(0,0,0,0.6)', width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center' },
 
-    btnGuardarFull: { backgroundColor: '#0f172a', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 25 },
-    btnGuardarTextoFull: { color: 'white', fontSize: 16, fontWeight: 'bold' }
-});
+        btnGuardarFull: { backgroundColor: colors.text, paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 25 },
+        btnGuardarTextoFull: { color: colors.background, fontSize: 16, fontWeight: 'bold' }
+    });
+}

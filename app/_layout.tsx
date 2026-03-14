@@ -1,14 +1,20 @@
 import { Stack } from 'expo-router';
-import { AppProvider } from '../context/AppContext'; // Importamos nuestro cerebro
+import React from 'react';
+
+// IMPORTAMOS TUS DOS PROVEEDORES DE CONTEXTO
+import { AppProvider } from '../context/AppContext';
+import { ThemeProvider } from '../context/ThemeContext';
 
 export default function RootLayout() {
   return (
-    // Envolvemos toda la aplicación en el Proveedor
-    <AppProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Aquí adentro viven todas tus pantallas y pestañas */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </AppProvider>
+    // 1. Envolvemos con el Tema (para que toda la app sepa qué colores usar)
+    <ThemeProvider>
+      {/* 2. Envolvemos con los Datos (ramos, tareas, etc.) */}
+      <AppProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </AppProvider>
+    </ThemeProvider>
   );
 }

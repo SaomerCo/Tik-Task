@@ -4,6 +4,10 @@ import React, { useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../context/AppContext';
 
+// IMPORTACIONES DEL TEMA Y ENCABEZADO
+import Encabezado from '../../components/Encabezado';
+import { useTheme } from '../../context/ThemeContext';
+
 const TIPOS_EVENTO = [
   { id: 'evaluacion', label: 'Evaluación próxima', icon: 'school', color: '#ef4444' },
   { id: 'cancelada', label: 'Clase cancelada', icon: 'close-circle', color: '#64748b' },
@@ -13,6 +17,10 @@ const TIPOS_EVENTO = [
 
 export default function EventosScreen() {
   const { eventosGlobales, eliminarEvento, agregarEvento, editarEvento, ramosGlobales } = useAppContext();
+
+  // EXTRAEMOS LOS COLORES DEL TEMA
+  const { colors, isDark } = useTheme();
+  const s = buildStyles(colors, isDark);
 
   // Filtros de vista
   const [filtroActual, setFiltroActual] = useState<string>('todos');
@@ -186,70 +194,72 @@ export default function EventosScreen() {
   const esVistaLimite = tipoSel?.id === 'entregable' || (tipoSel?.id === 'personalizado' && formatoTiempo === 'limite');
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={s.mainContainer}>
 
-      <View style={styles.headerContainer}>
-        <Text style={styles.tituloPrincipal}>Tus Eventos</Text>
-        <Text style={styles.subtitulo}>{eventosOrdenados.length} eventos programados</Text>
-      </View>
+      <Encabezado
+        titulo="Tus Eventos"
+        subtitulo={`${eventosOrdenados.length} eventos programados`}
+        icono="notifications"
+        colorActivo={colors.warning}
+      />
 
       <View style={{ paddingBottom: 10 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtrosContainer}>
-          <TouchableOpacity style={[styles.filtroPildora, filtroActual === 'todos' && styles.filtroActivo]} onPress={() => setFiltroActual('todos')}>
-            <Text style={[styles.filtroTexto, filtroActual === 'todos' && styles.filtroTextoActivo]}>Todos</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtrosContainer}>
+          <TouchableOpacity style={[s.filtroPildora, filtroActual === 'todos' && s.filtroActivo]} onPress={() => setFiltroActual('todos')}>
+            <Text style={[s.filtroTexto, filtroActual === 'todos' && s.filtroTextoActivo]}>Todos</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.filtroPildora, filtroActual === 'general' && styles.filtroActivo]} onPress={() => setFiltroActual('general')}>
-            <Text style={[styles.filtroTexto, filtroActual === 'general' && styles.filtroTextoActivo]}>Generales</Text>
+          <TouchableOpacity style={[s.filtroPildora, filtroActual === 'general' && s.filtroActivo]} onPress={() => setFiltroActual('general')}>
+            <Text style={[s.filtroTexto, filtroActual === 'general' && s.filtroTextoActivo]}>Generales</Text>
           </TouchableOpacity>
 
           {ramosGlobales.map((ramo: any) => (
             <TouchableOpacity
               key={ramo.id}
-              style={[styles.filtroPildora, filtroActual === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]}
+              style={[s.filtroPildora, filtroActual === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]}
               onPress={() => setFiltroActual(ramo.id)}
             >
-              <Text style={[styles.filtroTexto, filtroActual === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
+              <Text style={[s.filtroTexto, filtroActual === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
         {eventosOrdenados.length === 0 ? (
-          <View style={styles.estadoVacio}>
-            <Ionicons name="calendar-outline" size={60} color="#cbd5e1" />
-            <Text style={styles.textoVacio}>No hay eventos aquí</Text>
-            <Text style={{ color: '#94a3b8', marginTop: 5 }}>Usa el botón + para registrar uno nuevo.</Text>
+          <View style={s.estadoVacio}>
+            <Ionicons name="calendar-outline" size={60} color={colors.textSecondary} />
+            <Text style={s.textoVacio}>No hay eventos aquí</Text>
+            <Text style={{ color: colors.textSecondary, marginTop: 5 }}>Usa el botón + para registrar uno nuevo.</Text>
           </View>
         ) : (
           eventosOrdenados.map((ev: any) => {
             const ramoVinculado = ramosGlobales.find((r: any) => r.id === ev.ramoId);
-            const colorFinal = ramoVinculado ? ramoVinculado.colorHex : (ev.color || '#f59e0b');
+            const colorFinal = ramoVinculado ? ramoVinculado.colorHex : (ev.color || colors.warning);
 
             return (
-              <View key={ev.id} style={styles.tarjeta}>
-                <View style={[styles.lineaColor, { backgroundColor: colorFinal }]} />
+              <View key={ev.id} style={s.tarjeta}>
+                <View style={[s.lineaColor, { backgroundColor: colorFinal }]} />
 
                 <View style={{ flex: 1 }}>
-                  <View style={[styles.badgeTipo, { backgroundColor: colorFinal + '15' }]}>
+                  <View style={[s.badgeTipo, { backgroundColor: isDark ? colorFinal + '30' : colorFinal + '15' }]}>
                     <Ionicons name={ev.icono || 'calendar'} size={12} color={colorFinal} style={{ marginRight: 4 }} />
-                    <Text style={[styles.badgeTexto, { color: colorFinal }]}>{ev.tipo}</Text>
+                    <Text style={[s.badgeTexto, { color: colorFinal }]}>{ev.tipo}</Text>
                   </View>
 
-                  <Text style={styles.tituloEvento} numberOfLines={2}>{ev.titulo}</Text>
+                  <Text style={s.tituloEvento} numberOfLines={2}>{ev.titulo}</Text>
 
-                  <View style={styles.fechaContainer}>
-                    <Ionicons name="time-outline" size={14} color="#64748b" style={{ marginRight: 4 }} />
-                    <Text style={styles.fechaTexto}>{ev.fecha} • {ev.hora}</Text>
+                  <View style={s.fechaContainer}>
+                    <Ionicons name="time-outline" size={14} color={colors.textSecondary} style={{ marginRight: 4 }} />
+                    <Text style={s.fechaTexto}>{ev.fecha} • {ev.hora}</Text>
                   </View>
                 </View>
 
-                <View style={styles.accionesContainer}>
-                  <TouchableOpacity style={styles.btnAccion} onPress={() => abrirModalEdicion(ev)}>
-                    <Ionicons name="pencil" size={20} color="#94a3b8" />
+                <View style={s.accionesContainer}>
+                  <TouchableOpacity style={s.btnAccion} onPress={() => abrirModalEdicion(ev)}>
+                    <Ionicons name="pencil" size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.btnAccion} onPress={() => eliminarEvento(ev.id)}>
-                    <Ionicons name="trash" size={20} color="#ef4444" />
+                  <TouchableOpacity style={s.btnAccion} onPress={() => eliminarEvento(ev.id)}>
+                    <Ionicons name="trash" size={20} color={colors.danger} />
                   </TouchableOpacity>
                 </View>
 
@@ -260,27 +270,27 @@ export default function EventosScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <TouchableOpacity style={styles.fab} onPress={abrirModalNuevo}>
+      <TouchableOpacity style={s.fab} onPress={abrirModalNuevo}>
         <Ionicons name="add" size={30} color="white" />
       </TouchableOpacity>
 
       <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={resetModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
 
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>{eventoAEditarId ? 'Editar Evento' : 'Nuevo Evento'}</Text>
-              <TouchableOpacity onPress={resetModal}><Ionicons name="close" size={26} color="#64748b" /></TouchableOpacity>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitulo}>{eventoAEditarId ? 'Editar Evento' : 'Nuevo Evento'}</Text>
+              <TouchableOpacity onPress={resetModal}><Ionicons name="close" size={26} color={colors.textSecondary} /></TouchableOpacity>
             </View>
 
             {paso === 1 && !eventoAEditarId && (
               <View>
-                <Text style={styles.pregunta}>¿Qué deseas registrar?</Text>
-                <View style={styles.gridOpciones}>
+                <Text style={s.pregunta}>¿Qué deseas registrar?</Text>
+                <View style={s.gridOpciones}>
                   {TIPOS_EVENTO.map(t => (
-                    <TouchableOpacity key={t.id} style={styles.cajaOpcion} onPress={() => seleccionarTipo(t)}>
-                      <View style={[styles.iconoCaja, { backgroundColor: t.color }]}><Ionicons name={t.icon as any} size={24} color="white" /></View>
-                      <Text style={styles.textoCaja}>{t.label}</Text>
+                    <TouchableOpacity key={t.id} style={s.cajaOpcion} onPress={() => seleccionarTipo(t)}>
+                      <View style={[s.iconoCaja, { backgroundColor: t.color }]}><Ionicons name={t.icon as any} size={24} color="white" /></View>
+                      <Text style={s.textoCaja}>{t.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -290,92 +300,96 @@ export default function EventosScreen() {
             {paso === 2 && tipoSel && (
               <ScrollView showsVerticalScrollIndicator={false}>
 
-                <View style={[styles.resumenTipoContainer, { borderColor: tipoSel.color + '40', backgroundColor: tipoSel.color + '10' }]}>
+                <View style={[s.resumenTipoContainer, { borderColor: isDark ? tipoSel.color + '50' : tipoSel.color + '40', backgroundColor: isDark ? tipoSel.color + '20' : tipoSel.color + '10' }]}>
                   <Ionicons name={tipoSel.icon as any} size={20} color={tipoSel.color} />
-                  <Text style={[styles.resumenTipoTexto, { color: tipoSel.color }]}>{tipoSel.label}</Text>
+                  <Text style={[s.resumenTipoTexto, { color: tipoSel.color }]}>{tipoSel.label}</Text>
                 </View>
 
                 {/* SELECTOR EXCLUSIVO PARA EVENTOS A MEDIDA */}
                 {tipoSel.id === 'personalizado' && (
                   <View style={{ marginBottom: 15 }}>
-                    <Text style={styles.label}>Formato de hora</Text>
-                    <View style={styles.toggleContainer}>
+                    <Text style={s.label}>Formato de hora</Text>
+                    <View style={s.toggleContainer}>
                       <TouchableOpacity
-                        style={[styles.toggleBtn, formatoTiempo === 'rango' && styles.toggleBtnActive]}
+                        style={[s.toggleBtn, formatoTiempo === 'rango' && s.toggleBtnActive]}
                         onPress={() => manejarCambioFormato('rango')}
                       >
-                        <Text style={[styles.toggleText, formatoTiempo === 'rango' && styles.toggleTextActive]}>Rango (Inicio - Fin)</Text>
+                        <Text style={[s.toggleText, formatoTiempo === 'rango' && s.toggleTextActive]}>Rango (Inicio - Fin)</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.toggleBtn, formatoTiempo === 'limite' && styles.toggleBtnActive]}
+                        style={[s.toggleBtn, formatoTiempo === 'limite' && s.toggleBtnActive]}
                         onPress={() => manejarCambioFormato('limite')}
                       >
-                        <Text style={[styles.toggleText, formatoTiempo === 'limite' && styles.toggleTextActive]}>Hora límite</Text>
+                        <Text style={[s.toggleText, formatoTiempo === 'limite' && s.toggleTextActive]}>Hora límite</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
                 )}
 
-                <Text style={styles.label}>Vincular a un ramo (Opcional)</Text>
+                <Text style={s.label}>Vincular a un ramo (Opcional)</Text>
 
                 {ramosGlobales && ramosGlobales.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.ramosSugeridosContainer}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.ramosSugeridosContainer}>
                     {ramosGlobales.map((ramo: any) => {
                       const isSelected = ramoVinculadoId === ramo.id;
                       return (
                         <TouchableOpacity
                           key={ramo.id}
                           style={[
-                            styles.ramoPildora,
-                            { borderColor: isSelected ? ramo.colorHex : '#cbd5e1', backgroundColor: isSelected ? ramo.colorHex : 'white' }
+                            s.ramoPildora,
+                            {
+                              borderColor: isSelected ? ramo.colorHex : colors.border,
+                              backgroundColor: isSelected ? ramo.colorHex : (isDark ? colors.background : 'white')
+                            }
                           ]}
                           onPress={() => manejarSeleccionRamoModal(ramo)}
                         >
-                          <Text style={[styles.ramoPildoraTexto, { color: isSelected ? 'white' : '#64748b' }]}>{ramo.nombre}</Text>
+                          <Text style={[s.ramoPildoraTexto, { color: isSelected ? 'white' : colors.textSecondary }]}>{ramo.nombre}</Text>
                         </TouchableOpacity>
                       );
                     })}
                   </ScrollView>
                 )}
 
-                <Text style={styles.label}>Título</Text>
+                <Text style={s.label}>Título</Text>
                 <TextInput
-                  style={styles.input}
+                  style={s.input}
                   placeholder={tipoSel.id === 'entregable' ? "Ej: Entrega de Ensayo Final" : "Ej: Prueba de Matemáticas"}
+                  placeholderTextColor={colors.textSecondary}
                   value={tituloManual}
                   onChangeText={setTituloManual}
                 />
 
-                <Text style={styles.label}>Fecha</Text>
-                <TouchableOpacity style={styles.btnSelector} onPress={() => setShowDatePicker(true)}>
-                  <Ionicons name="calendar-outline" size={20} color="#1a73e8" style={{ marginRight: 8 }} />
-                  <Text style={styles.textoSelector}>{formatearFecha(fechaSel)}</Text>
+                <Text style={s.label}>Fecha</Text>
+                <TouchableOpacity style={s.btnSelector} onPress={() => setShowDatePicker(true)}>
+                  <Ionicons name="calendar-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={s.textoSelector}>{formatearFecha(fechaSel)}</Text>
                 </TouchableOpacity>
 
-                <View style={[styles.row, { marginTop: 15 }]}>
+                <View style={[s.row, { marginTop: 15 }]}>
 
                   {esVistaLimite ? (
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Hora Límite</Text>
-                      <TouchableOpacity style={styles.btnSelector} onPress={() => setShowTimePickerInicio(true)}>
-                        <Ionicons name="time-outline" size={20} color="#10b981" style={{ marginRight: 8 }} />
-                        <Text style={styles.textoSelector}>{formatearHora(horaInicioSel)}</Text>
+                      <Text style={s.label}>Hora Límite</Text>
+                      <TouchableOpacity style={s.btnSelector} onPress={() => setShowTimePickerInicio(true)}>
+                        <Ionicons name="time-outline" size={20} color={colors.success} style={{ marginRight: 8 }} />
+                        <Text style={s.textoSelector}>{formatearHora(horaInicioSel)}</Text>
                       </TouchableOpacity>
                     </View>
                   ) : (
                     <>
                       <View style={{ flex: 1, marginRight: 10 }}>
-                        <Text style={styles.label}>Hora Inicio</Text>
-                        <TouchableOpacity style={styles.btnSelector} onPress={() => setShowTimePickerInicio(true)}>
-                          <Ionicons name="time-outline" size={20} color="#10b981" style={{ marginRight: 8 }} />
-                          <Text style={styles.textoSelector}>{formatearHora(horaInicioSel)}</Text>
+                        <Text style={s.label}>Hora Inicio</Text>
+                        <TouchableOpacity style={s.btnSelector} onPress={() => setShowTimePickerInicio(true)}>
+                          <Ionicons name="time-outline" size={20} color={colors.success} style={{ marginRight: 8 }} />
+                          <Text style={s.textoSelector}>{formatearHora(horaInicioSel)}</Text>
                         </TouchableOpacity>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>Hora Fin</Text>
-                        <TouchableOpacity style={styles.btnSelector} onPress={() => setShowTimePickerFin(true)}>
-                          <Ionicons name="time-outline" size={20} color="#f59e0b" style={{ marginRight: 8 }} />
-                          <Text style={styles.textoSelector}>{formatearHora(horaFinSel)}</Text>
+                        <Text style={s.label}>Hora Fin</Text>
+                        <TouchableOpacity style={s.btnSelector} onPress={() => setShowTimePickerFin(true)}>
+                          <Ionicons name="time-outline" size={20} color={colors.warning} style={{ marginRight: 8 }} />
+                          <Text style={s.textoSelector}>{formatearHora(horaFinSel)}</Text>
                         </TouchableOpacity>
                       </View>
                     </>
@@ -396,8 +410,8 @@ export default function EventosScreen() {
                     onChange={(e, date) => { setShowTimePickerFin(false); if (date) setHoraFinSel(date); }} />
                 )}
 
-                <TouchableOpacity style={styles.btnGuardarFull} onPress={guardarEventoFinal}>
-                  <Text style={styles.btnGuardarTextoFull}>{eventoAEditarId ? 'Actualizar Evento' : 'Guardar Evento'}</Text>
+                <TouchableOpacity style={s.btnGuardarFull} onPress={guardarEventoFinal}>
+                  <Text style={s.btnGuardarTextoFull}>{eventoAEditarId ? 'Actualizar Evento' : 'Guardar Evento'}</Text>
                 </TouchableOpacity>
                 <View style={{ height: 20 }} />
 
@@ -412,70 +426,72 @@ export default function EventosScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#f8fafc' },
-  headerContainer: { paddingTop: 60, paddingBottom: 15, paddingHorizontal: 20 },
-  tituloPrincipal: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
-  subtitulo: { fontSize: 14, color: '#64748b', marginTop: 2 },
-  container: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
+// ─────────────────────────────────────────────────────────────────────────────
+// Estilos Dinámicos (Integrando colores del tema)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildStyles(colors: any, isDark: boolean) {
+  return StyleSheet.create({
+    mainContainer: { flex: 1, backgroundColor: colors.background },
+    container: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
 
-  filtrosContainer: { paddingHorizontal: 20, paddingTop: 5, gap: 10 },
-  filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: 'white', borderWidth: 1, borderColor: '#e2e8f0' },
-  filtroActivo: { backgroundColor: '#0f172a', borderColor: '#0f172a' },
-  filtroTexto: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-  filtroTextoActivo: { color: 'white' },
+    filtrosContainer: { paddingHorizontal: 20, paddingTop: 5, gap: 10 },
+    filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : 'white', borderWidth: 1, borderColor: colors.border },
+    filtroActivo: { backgroundColor: colors.text, borderColor: colors.text },
+    filtroTexto: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+    filtroTextoActivo: { color: colors.background },
 
-  tarjeta: { flexDirection: 'row', backgroundColor: 'white', borderRadius: 16, padding: 15, marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
-  lineaColor: { width: 5, height: '100%', borderRadius: 4, marginRight: 15 },
+    tarjeta: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 16, padding: 15, marginBottom: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 5, elevation: isDark ? 0 : 2, borderWidth: 1, borderColor: colors.border },
+    lineaColor: { width: 5, height: '100%', borderRadius: 4, marginRight: 15 },
 
-  badgeTipo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginBottom: 6 },
-  badgeTexto: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+    badgeTipo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginBottom: 6 },
+    badgeTexto: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
 
-  tituloEvento: { fontSize: 18, fontWeight: 'bold', color: '#0f172a', marginBottom: 6 },
-  fechaContainer: { flexDirection: 'row', alignItems: 'center' },
-  fechaTexto: { fontSize: 14, color: '#64748b', fontWeight: '500' },
+    tituloEvento: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 6 },
+    fechaContainer: { flexDirection: 'row', alignItems: 'center' },
+    fechaTexto: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
 
-  accionesContainer: { flexDirection: 'row', gap: 8, marginLeft: 10 },
-  btnAccion: { padding: 8, backgroundColor: '#f1f5f9', borderRadius: 8 },
+    accionesContainer: { flexDirection: 'row', gap: 8, marginLeft: 10 },
+    btnAccion: { padding: 8, backgroundColor: isDark ? colors.surfaceElevated : '#f1f5f9', borderRadius: 8 },
 
-  estadoVacio: { alignItems: 'center', marginTop: 60 },
-  textoVacio: { color: '#94a3b8', fontSize: 18, fontWeight: 'bold', marginTop: 10 },
+    estadoVacio: { alignItems: 'center', marginTop: 60 },
+    textoVacio: { color: colors.textSecondary, fontSize: 18, fontWeight: 'bold', marginTop: 10 },
 
-  fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#f59e0b', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#f59e0b', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+    fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: colors.warning, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: colors.warning, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
-  modalTitulo: { fontSize: 22, fontWeight: 'bold' },
+    modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, maxHeight: '90%' },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
+    modalTitulo: { fontSize: 22, fontWeight: 'bold', color: colors.text },
 
-  pregunta: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', textAlign: 'center', marginBottom: 20 },
+    pregunta: { fontSize: 16, fontWeight: 'bold', color: colors.text, textAlign: 'center', marginBottom: 20 },
 
-  gridOpciones: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  cajaOpcion: { width: '48%', backgroundColor: '#f8fafc', padding: 15, borderRadius: 16, alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: '#e2e8f0' },
-  iconoCaja: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  textoCaja: { fontSize: 13, fontWeight: 'bold', color: '#475569', textAlign: 'center' },
+    gridOpciones: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+    cajaOpcion: { width: '48%', backgroundColor: isDark ? colors.background : '#f8fafc', padding: 15, borderRadius: 16, alignItems: 'center', marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+    iconoCaja: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    textoCaja: { fontSize: 13, fontWeight: 'bold', color: colors.textSecondary, textAlign: 'center' },
 
-  resumenTipoContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
-  resumenTipoTexto: { fontSize: 14, fontWeight: 'bold', marginLeft: 8 },
+    resumenTipoContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 10, borderRadius: 12, marginBottom: 20, borderWidth: 1 },
+    resumenTipoTexto: { fontSize: 14, fontWeight: 'bold', marginLeft: 8 },
 
-  // Estilos del Toggle Button
-  toggleContainer: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 8, padding: 4 },
-  toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
-  toggleBtnActive: { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  toggleText: { fontWeight: 'bold', color: '#64748b', fontSize: 13 },
-  toggleTextActive: { color: '#0f172a' },
+    // Estilos del Toggle Button
+    toggleContainer: { flexDirection: 'row', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 8, padding: 4 },
+    toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+    toggleBtnActive: { backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 4, elevation: isDark ? 0 : 2 },
+    toggleText: { fontWeight: 'bold', color: colors.textSecondary, fontSize: 13 },
+    toggleTextActive: { color: colors.text },
 
-  ramosSugeridosContainer: { flexDirection: 'row', marginBottom: 15, marginTop: 5 },
-  ramoPildora: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8 },
-  ramoPildoraTexto: { fontSize: 13, fontWeight: 'bold' },
+    ramosSugeridosContainer: { flexDirection: 'row', marginBottom: 15, marginTop: 5 },
+    ramoPildora: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8 },
+    ramoPildoraTexto: { fontSize: 13, fontWeight: 'bold' },
 
-  label: { fontSize: 14, fontWeight: 'bold', color: '#64748b', marginBottom: 8 },
-  input: { backgroundColor: '#f1f5f9', padding: 15, borderRadius: 12, marginBottom: 15, fontSize: 16, color: '#334155' },
+    label: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary, marginBottom: 8 },
+    input: { backgroundColor: isDark ? colors.background : '#f1f5f9', padding: 15, borderRadius: 12, marginBottom: 15, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
 
-  row: { flexDirection: 'row', gap: 10 },
-  btnSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f1f5f9', padding: 15, borderRadius: 12 },
-  textoSelector: { fontSize: 16, fontWeight: 'bold', color: '#334155' },
+    row: { flexDirection: 'row', gap: 10 },
+    btnSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? colors.background : '#f1f5f9', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
+    textoSelector: { fontSize: 16, fontWeight: 'bold', color: colors.text },
 
-  btnGuardarFull: { backgroundColor: '#0f172a', padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 25 },
-  btnGuardarTextoFull: { color: 'white', fontSize: 16, fontWeight: 'bold' }
-});
+    btnGuardarFull: { backgroundColor: colors.text, padding: 18, borderRadius: 12, alignItems: 'center', marginTop: 25 },
+    btnGuardarTextoFull: { color: colors.background, fontSize: 16, fontWeight: 'bold' }
+  });
+}

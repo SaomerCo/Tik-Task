@@ -2,20 +2,25 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { colors, themeMode } = useTheme();
 
   return (
     <Tabs
+      key={themeMode}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#1a73e8', // Color azul cuando está seleccionado
-        tabBarInactiveTintColor: '#94a3b8', // Color gris cuando no está seleccionado
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
           borderTopWidth: 1,
-          borderTopColor: '#f1f5f9',
+          borderTopColor: colors.tabBarBorder,
           elevation: 0,
+          shadowOpacity: 0,
           height: 65 + insets.bottom,
           paddingBottom: insets.bottom + 5,
           paddingTop: 5,
@@ -23,7 +28,7 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: '500',
-        }
+        },
       }}
     >
       {/* 1. Ramos */}
@@ -85,8 +90,16 @@ export default function TabLayout() {
         name="rendimiento"
         options={{
           title: 'Rendimiento',
-          // CAMBIAMOS EL ÍCONO AQUÍ a "stats-chart"
           tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={24} color={color} />,
+        }}
+      />
+
+      {/* 8. Configuración */}
+      <Tabs.Screen
+        name="configuracion"
+        options={{
+          title: 'Config.',
+          tabBarIcon: ({ color }) => <Ionicons name="settings" size={24} color={color} />,
         }}
       />
     </Tabs>

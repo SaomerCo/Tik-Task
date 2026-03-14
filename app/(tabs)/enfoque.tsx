@@ -5,8 +5,16 @@ import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, Toucha
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 
+// IMPORTACIONES DEL TEMA Y ENCABEZADO
+import Encabezado from '../../components/Encabezado';
+import { useTheme } from '../../context/ThemeContext';
+
 export default function EnfoqueScreen() {
   const { tareasGlobales, agregarTarea, eliminarTarea, toggleCompletarTarea, actualizarTarea, ramosGlobales, sesionesEstudio, agregarSesionEstudio } = useAppContext();
+
+  // EXTRAEMOS LOS COLORES DEL TEMA
+  const { colors, isDark } = useTheme();
+  const s = buildStyles(colors, isDark);
 
   const [tabActiva, setTabActiva] = useState<'pomodoro' | 'tareas'>('pomodoro');
 
@@ -158,7 +166,7 @@ export default function EnfoqueScreen() {
   };
 
   const ramoActivo = ramosGlobales.find((r: any) => r.id === ramoSeleccionadoId);
-  const colorSesion = esFaseDescanso ? '#10b981' : (ramoActivo ? ramoActivo.colorHex : '#1a73e8');
+  const colorSesion = esFaseDescanso ? colors.success : (ramoActivo ? ramoActivo.colorHex : colors.primary);
 
   // ==========================================
   // AGRUPAR HISTORIAL DE ESTUDIO POR DÍA
@@ -170,21 +178,24 @@ export default function EnfoqueScreen() {
   }, {});
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.tituloPrincipal}>Enfoque</Text>
-        <Text style={styles.subtitulo}>Domina tu tiempo y hábitos</Text>
-      </View>
+    <SafeAreaView style={s.container}>
+
+      <Encabezado
+        titulo="Enfoque"
+        subtitulo="Domina tu tiempo y hábitos"
+        icono="timer"
+        colorActivo={colors.success} // Usamos verde/success para esta pantalla
+      />
 
       {!sesionIniciada && (
-        <View style={styles.tabContainer}>
-          <TouchableOpacity style={[styles.tabBoton, tabActiva === 'pomodoro' && styles.tabBotonActivo]} onPress={() => setTabActiva('pomodoro')}>
-            <Ionicons name="timer-outline" size={18} color={tabActiva === 'pomodoro' ? '#1a73e8' : '#64748b'} />
-            <Text style={[styles.tabTexto, tabActiva === 'pomodoro' && styles.tabTextoActivo]}>Estudiar</Text>
+        <View style={s.tabContainer}>
+          <TouchableOpacity style={[s.tabBoton, tabActiva === 'pomodoro' && s.tabBotonActivo]} onPress={() => setTabActiva('pomodoro')}>
+            <Ionicons name="timer-outline" size={18} color={tabActiva === 'pomodoro' ? colors.success : colors.textSecondary} />
+            <Text style={[s.tabTexto, tabActiva === 'pomodoro' && { color: colors.success }]}>Estudiar</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.tabBoton, tabActiva === 'tareas' && styles.tabBotonActivo]} onPress={() => setTabActiva('tareas')}>
-            <Ionicons name="checkbox-outline" size={18} color={tabActiva === 'tareas' ? '#1a73e8' : '#64748b'} />
-            <Text style={[styles.tabTexto, tabActiva === 'tareas' && styles.tabTextoActivo]}>Tareas</Text>
+          <TouchableOpacity style={[s.tabBoton, tabActiva === 'tareas' && s.tabBotonActivo]} onPress={() => setTabActiva('tareas')}>
+            <Ionicons name="checkbox-outline" size={18} color={tabActiva === 'tareas' ? colors.success : colors.textSecondary} />
+            <Text style={[s.tabTexto, tabActiva === 'tareas' && { color: colors.success }]}>Tareas</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -194,30 +205,30 @@ export default function EnfoqueScreen() {
       {/* ========================================== */}
       {tabActiva === 'tareas' && !sesionIniciada && (
         <View style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={styles.scrollContent}>
+          <ScrollView contentContainerStyle={s.scrollContent}>
             {tareasDeHoy.length === 0 ? (
-              <View style={styles.estadoVacio}>
-                <Ionicons name="list-outline" size={60} color="#cbd5e1" />
-                <Text style={styles.textoVacio}>No hay tareas para hoy</Text>
-                <Text style={styles.subtextoVacio}>Añade hábitos como "Tomar 2L de agua" o "Leer 20 pags".</Text>
+              <View style={s.estadoVacio}>
+                <Ionicons name="list-outline" size={60} color={colors.border} />
+                <Text style={s.textoVacio}>No hay tareas para hoy</Text>
+                <Text style={s.subtextoVacio}>Añade hábitos como "Tomar 2L de agua" o "Leer 20 pags".</Text>
               </View>
             ) : (
               tareasDeHoy.map((tarea: any) => (
-                <View key={tarea.id} style={styles.tarjetaTarea}>
-                  <TouchableOpacity onPress={() => toggleCompletarTarea(tarea.id)} style={styles.checkContainer}>
-                    <Ionicons name={tarea.completada ? "checkmark-circle" : "ellipse-outline"} size={28} color={tarea.completada ? "#10b981" : "#cbd5e1"} />
+                <View key={tarea.id} style={s.tarjetaTarea}>
+                  <TouchableOpacity onPress={() => toggleCompletarTarea(tarea.id)} style={s.checkContainer}>
+                    <Ionicons name={tarea.completada ? "checkmark-circle" : "ellipse-outline"} size={28} color={tarea.completada ? colors.success : colors.textSecondary} />
                   </TouchableOpacity>
                   <TouchableOpacity style={{ flex: 1 }} onPress={() => abrirModalEditarTarea(tarea)} activeOpacity={0.6}>
-                    <Text style={[styles.textoTarea, tarea.completada && styles.textoTareaCompletada]}>{tarea.texto}</Text>
+                    <Text style={[s.textoTarea, tarea.completada && s.textoTareaCompletada]}>{tarea.texto}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => eliminarTarea(tarea.id)} style={styles.btnEliminarTarea}>
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
+                  <TouchableOpacity onPress={() => eliminarTarea(tarea.id)} style={s.btnEliminarTarea}>
+                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
                   </TouchableOpacity>
                 </View>
               ))
             )}
           </ScrollView>
-          <TouchableOpacity style={styles.fab} onPress={abrirModalNuevaTarea}>
+          <TouchableOpacity style={s.fab} onPress={abrirModalNuevaTarea}>
             <Ionicons name="add" size={30} color="white" />
           </TouchableOpacity>
         </View>
@@ -232,30 +243,27 @@ export default function EnfoqueScreen() {
           {!sesionIniciada ? (
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 50, paddingTop: 10 }}>
 
-              <TouchableOpacity
-                style={styles.btnNuevaSesion}
-                onPress={() => setModalConfigEstudioVisible(true)}
-              >
+              <TouchableOpacity style={s.btnNuevaSesion} onPress={() => setModalConfigEstudioVisible(true)}>
                 <Ionicons name="add-circle" size={24} color="white" style={{ marginRight: 10 }} />
-                <Text style={styles.btnNuevaSesionTexto}>Iniciar sesión de estudio</Text>
+                <Text style={s.btnNuevaSesionTexto}>Iniciar sesión de estudio</Text>
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={s.divider} />
 
-              <Text style={styles.tituloSeccionHistorial}>Historial de Estudio</Text>
+              <Text style={s.tituloSeccionHistorial}>Historial de Estudio</Text>
 
               {Object.keys(historialPorDia).length === 0 ? (
-                <View style={styles.estadoVacioHistorial}>
-                  <Ionicons name="bar-chart-outline" size={40} color="#cbd5e1" />
-                  <Text style={styles.textoVacioHistorial}>Aún no hay sesiones registradas.</Text>
+                <View style={s.estadoVacioHistorial}>
+                  <Ionicons name="bar-chart-outline" size={40} color={colors.border} />
+                  <Text style={s.textoVacioHistorial}>Aún no hay sesiones registradas.</Text>
                 </View>
               ) : (
                 Object.keys(historialPorDia).map((fecha, idx) => (
-                  <View key={idx} style={styles.historialDiaContainer}>
-                    <Text style={styles.historialFecha}>{fecha}:</Text>
+                  <View key={idx} style={s.historialDiaContainer}>
+                    <Text style={s.historialFecha}>{fecha}:</Text>
                     {historialPorDia[fecha].map((sesion: any) => {
                       const ramoInfo = ramosGlobales.find((r: any) => r.id === sesion.ramoId);
-                      const colorRamo = ramoInfo ? ramoInfo.colorHex : (sesion.ramoId ? '#94a3b8' : '#1a73e8');
+                      const colorRamo = ramoInfo ? ramoInfo.colorHex : (sesion.ramoId ? colors.textSecondary : colors.primary);
                       const nombreRamo = ramoInfo ? ramoInfo.nombre : '';
 
                       let textoMostrar = '';
@@ -265,10 +273,10 @@ export default function EnfoqueScreen() {
                       else textoMostrar = 'Sesión de Estudio';
 
                       return (
-                        <View key={sesion.id} style={styles.historialItem}>
-                          <View style={[styles.puntoHistorial, { backgroundColor: colorRamo }]} />
-                          <Text style={styles.historialTexto}>
-                            Estudiaste <Text style={{ fontWeight: 'bold', color: '#0f172a' }}>{formatearDuracionHistorial(sesion.duracionSegundos)}</Text> - {textoMostrar}
+                        <View key={sesion.id} style={s.historialItem}>
+                          <View style={[s.puntoHistorial, { backgroundColor: colorRamo }]} />
+                          <Text style={s.historialTexto}>
+                            Estudiaste <Text style={{ fontWeight: 'bold', color: colors.text }}>{formatearDuracionHistorial(sesion.duracionSegundos)}</Text> - {textoMostrar}
                           </Text>
                         </View>
                       );
@@ -280,32 +288,28 @@ export default function EnfoqueScreen() {
             </ScrollView>
           ) : (
             // CRONÓMETRO ACTIVO
-            <View style={styles.timerActivoContainer}>
-              <View style={[styles.badgeFase, { backgroundColor: colorSesion + '20' }]}>
-                {/* ICONOS ELIMINADOS DE AQUÍ */}
-                <Text style={[styles.textoFase, { color: colorSesion }]}>
+            <View style={s.timerActivoContainer}>
+              <View style={[s.badgeFase, { backgroundColor: isDark ? colorSesion + '30' : colorSesion + '20' }]}>
+                <Text style={[s.textoFase, { color: colorSesion }]}>
                   {esFaseDescanso ? 'TIEMPO DE DESCANSO' : (modoEstudio === 'pomodoro' ? 'MODO POMODORO' : 'MODO ESTUDIO')}
                 </Text>
               </View>
 
-              <Text style={styles.ramoTimerTexto} numberOfLines={2}>
+              <Text style={s.ramoTimerTexto} numberOfLines={2}>
                 {tituloSesion || ramoActivo?.nombre || 'Sesión de Estudio'}
               </Text>
 
-              <View style={[styles.circuloTimerFondo, { borderColor: colorSesion }]}>
-                <Text style={styles.textoReloj}>{formatoTiempoTimer(tiempoRestante)}</Text>
-                <Text style={styles.textoSubReloj}>{estaCorriendo ? 'Corriendo...' : 'Pausado'}</Text>
+              <View style={[s.circuloTimerFondo, { borderColor: colorSesion }]}>
+                <Text style={s.textoReloj}>{formatoTiempoTimer(tiempoRestante)}</Text>
+                <Text style={s.textoSubReloj}>{estaCorriendo ? 'Corriendo...' : 'Pausado'}</Text>
               </View>
 
-              <View style={styles.timerControles}>
-                <TouchableOpacity style={styles.btnControlStop} onPress={detenerSesion}>
-                  <Ionicons name="square" size={24} color="#ef4444" />
+              <View style={s.timerControles}>
+                <TouchableOpacity style={s.btnControlStop} onPress={detenerSesion}>
+                  <Ionicons name="square" size={24} color={colors.danger} />
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.btnControlPlayPause, { backgroundColor: colorSesion }]}
-                  onPress={() => setEstaCorriendo(!estaCorriendo)}
-                >
+                <TouchableOpacity style={[s.btnControlPlayPause, { backgroundColor: colorSesion }]} onPress={() => setEstaCorriendo(!estaCorriendo)}>
                   <Ionicons name={estaCorriendo ? "pause" : "play"} size={36} color="white" style={!estaCorriendo && { marginLeft: 6 }} />
                 </TouchableOpacity>
               </View>
@@ -318,89 +322,84 @@ export default function EnfoqueScreen() {
       {/* MODAL CONFIGURACIÓN SESIÓN DE ESTUDIO */}
       {/* ========================================== */}
       <Modal animationType="slide" transparent={true} visible={modalConfigEstudioVisible} onRequestClose={() => setModalConfigEstudioVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { maxHeight: '90%' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>Configurar Sesión</Text>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalContent, { maxHeight: '90%' }]}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitulo}>Configurar Sesión</Text>
               <TouchableOpacity onPress={() => setModalConfigEstudioVisible(false)}>
-                <Ionicons name="close" size={26} color="#64748b" />
+                <Ionicons name="close" size={26} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
 
-              <Text style={styles.labelConfig}>Título de la sesión (Opcional)</Text>
+              <Text style={s.labelConfig}>Título de la sesión (Opcional)</Text>
               <TextInput
-                style={styles.inputConfig}
+                style={s.inputConfig}
                 placeholder="Ej. Preparación para prueba..."
+                placeholderTextColor={colors.textSecondary}
                 value={tituloSesion}
                 onChangeText={setTituloSesion}
               />
 
-              <View style={styles.configSeccion}>
-                <Text style={styles.labelConfig}>Vincular a un ramo (Opcional)</Text>
+              <View style={s.configSeccion}>
+                <Text style={s.labelConfig}>Vincular a un ramo (Opcional)</Text>
                 {ramosGlobales.length === 0 ? (
-                  <Text style={{ color: '#94a3b8', fontStyle: 'italic', marginTop: 10 }}>No tienes ramos registrados.</Text>
+                  <Text style={{ color: colors.textSecondary, fontStyle: 'italic', marginTop: 10 }}>No tienes ramos registrados.</Text>
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
                     {ramosGlobales.map((ramo: any) => (
                       <TouchableOpacity
                         key={ramo.id}
-                        style={[styles.ramoPildora, ramoSeleccionadoId === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]}
+                        style={[
+                          s.ramoPildora,
+                          ramoSeleccionadoId === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }
+                        ]}
                         onPress={() => setRamoSeleccionadoId(ramoSeleccionadoId === ramo.id ? null : ramo.id)}
                       >
-                        <Text style={[styles.ramoPildoraTexto, ramoSeleccionadoId === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
+                        <Text style={[s.ramoPildoraTexto, ramoSeleccionadoId === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
                 )}
               </View>
 
-              <Text style={[styles.labelConfig, { marginBottom: 10 }]}>Modo de Estudio</Text>
+              <Text style={[s.labelConfig, { marginBottom: 10 }]}>Modo de Estudio</Text>
 
-              <View style={styles.toggleContainer}>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, modoEstudio === 'pomodoro' && styles.toggleBtnActive]}
-                  onPress={() => setModoEstudio('pomodoro')}
-                >
-                  <Text style={[styles.toggleText, modoEstudio === 'pomodoro' && styles.toggleTextActive]}>Pomodoro (Con descansos)</Text>
+              <View style={s.toggleContainer}>
+                <TouchableOpacity style={[s.toggleBtn, modoEstudio === 'pomodoro' && s.toggleBtnActive]} onPress={() => setModoEstudio('pomodoro')}>
+                  <Text style={[s.toggleText, modoEstudio === 'pomodoro' && s.toggleTextActive]}>Pomodoro (Con descansos)</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggleBtn, modoEstudio === 'simple' && styles.toggleBtnActive]}
-                  onPress={() => setModoEstudio('simple')}
-                >
-                  <Text style={[styles.toggleText, modoEstudio === 'simple' && styles.toggleTextActive]}>Simple (Bloque único)</Text>
+                <TouchableOpacity style={[s.toggleBtn, modoEstudio === 'simple' && s.toggleBtnActive]} onPress={() => setModoEstudio('simple')}>
+                  <Text style={[s.toggleText, modoEstudio === 'simple' && s.toggleTextActive]}>Simple (Bloque único)</Text>
                 </TouchableOpacity>
               </View>
 
-              <Text style={[styles.labelConfig, { marginBottom: 10 }]}>Configuración de Tiempos</Text>
+              <Text style={[s.labelConfig, { marginBottom: 10 }]}>Configuración de Tiempos</Text>
 
-              <View style={styles.rowTiempos}>
-                <TouchableOpacity style={styles.cajaTiempoPicker} onPress={() => setShowPickerEnfoque(true)}>
-                  <View style={styles.iconoTituloTiempo}>
-                    <Text style={styles.tituloTiempo}>Estudio</Text>
+              <View style={s.rowTiempos}>
+                <TouchableOpacity style={s.cajaTiempoPicker} onPress={() => setShowPickerEnfoque(true)}>
+                  <View style={s.iconoTituloTiempo}>
+                    <Text style={s.tituloTiempo}>Estudio</Text>
                   </View>
-                  <Text style={styles.textoPickerTiempo}>{formatoTextoPicker(fechaEnfoque)}</Text>
-                  <Text style={styles.textoSubPicker}>Toca para editar</Text>
+                  <Text style={s.textoPickerTiempo}>{formatoTextoPicker(fechaEnfoque)}</Text>
+                  <Text style={s.textoSubPicker}>Toca para editar</Text>
                 </TouchableOpacity>
 
                 {modoEstudio === 'pomodoro' && (
-                  <TouchableOpacity style={styles.cajaTiempoPicker} onPress={() => setShowPickerDescanso(true)}>
-                    <View style={styles.iconoTituloTiempo}>
-                      <Text style={styles.tituloTiempo}>Descanso</Text>
+                  <TouchableOpacity style={s.cajaTiempoPicker} onPress={() => setShowPickerDescanso(true)}>
+                    <View style={s.iconoTituloTiempo}>
+                      <Text style={s.tituloTiempo}>Descanso</Text>
                     </View>
-                    <Text style={styles.textoPickerTiempo}>{formatoTextoPicker(fechaDescanso)}</Text>
-                    <Text style={styles.textoSubPicker}>Toca para editar</Text>
+                    <Text style={s.textoPickerTiempo}>{formatoTextoPicker(fechaDescanso)}</Text>
+                    <Text style={s.textoSubPicker}>Toca para editar</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
-              <TouchableOpacity
-                style={styles.btnIniciarSesion}
-                onPress={iniciarSesion}
-              >
+              <TouchableOpacity style={s.btnIniciarSesion} onPress={iniciarSesion}>
                 <Ionicons name="play" size={24} color="white" style={{ marginRight: 10 }} />
-                <Text style={styles.btnIniciarSesionTexto}>Comenzar a Estudiar</Text>
+                <Text style={s.btnIniciarSesionTexto}>Comenzar a Estudiar</Text>
               </TouchableOpacity>
               <View style={{ height: 20 }} />
             </ScrollView>
@@ -418,26 +417,27 @@ export default function EnfoqueScreen() {
 
       {/* MODAL CREAR/EDITAR TAREA */}
       <Modal animationType="slide" transparent={true} visible={modalTareaVisible} onRequestClose={() => setModalTareaVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitulo}>{tareaAEditarId ? 'Editar Tarea' : 'Nueva Tarea'}</Text>
+        <View style={s.modalOverlay}>
+          <View style={s.modalContent}>
+            <View style={s.modalHeader}>
+              <Text style={s.modalTitulo}>{tareaAEditarId ? 'Editar Tarea' : 'Nueva Tarea'}</Text>
               <TouchableOpacity onPress={() => setModalTareaVisible(false)}>
-                <Ionicons name="close" size={26} color="#64748b" />
+                <Ionicons name="close" size={26} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
             <TextInput
-              style={styles.input}
+              style={s.inputTarea}
               placeholder="Ej. Meditar 10 minutos..."
+              placeholderTextColor={colors.textSecondary}
               value={nuevaTareaTexto}
               onChangeText={setNuevaTareaTexto}
               autoFocus={true}
               onSubmitEditing={guardarTarea}
             />
 
-            <TouchableOpacity style={styles.btnGuardarFull} onPress={guardarTarea}>
-              <Text style={styles.btnGuardarTextoFull}>{tareaAEditarId ? 'Actualizar Tarea' : 'Añadir a mi día'}</Text>
+            <TouchableOpacity style={s.btnGuardarTareaFull} onPress={guardarTarea}>
+              <Text style={s.btnGuardarTextoFull}>{tareaAEditarId ? 'Actualizar Tarea' : 'Añadir a mi día'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -447,88 +447,90 @@ export default function EnfoqueScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
-  tituloPrincipal: { fontSize: 28, fontWeight: 'bold', color: '#0f172a' },
-  subtitulo: { fontSize: 14, color: '#64748b', marginTop: 4 },
+// ─────────────────────────────────────────────────────────────────────────────
+// Estilos Dinámicos (Integrando colores del tema)
+// ─────────────────────────────────────────────────────────────────────────────
+function buildStyles(colors: any, isDark: boolean) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.background },
 
-  tabContainer: { flexDirection: 'row', backgroundColor: '#e2e8f0', marginHorizontal: 20, borderRadius: 12, padding: 4, marginBottom: 15 },
-  tabBoton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 6 },
-  tabBotonActivo: { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  tabTexto: { fontWeight: 'bold', color: '#64748b', fontSize: 13 },
-  tabTextoActivo: { color: '#1a73e8' },
+    tabContainer: { flexDirection: 'row', backgroundColor: isDark ? colors.surfaceElevated : '#f1f5f9', marginHorizontal: 20, borderRadius: 12, padding: 4, marginBottom: 15, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
+    tabBoton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 8, gap: 6 },
+    tabBotonActivo: { backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 4, elevation: isDark ? 0 : 2 },
+    tabTexto: { fontWeight: 'bold', color: colors.textSecondary, fontSize: 13 },
 
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
 
-  tarjetaTarea: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  checkContainer: { marginRight: 15 },
-  textoTarea: { fontSize: 16, color: '#334155', fontWeight: '500' },
-  textoTareaCompletada: { textDecorationLine: 'line-through', color: '#94a3b8' },
-  btnEliminarTarea: { padding: 5, paddingLeft: 15 },
+    tarjetaTarea: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 4, elevation: isDark ? 0 : 2, borderWidth: 1, borderColor: colors.border },
+    checkContainer: { marginRight: 15 },
+    textoTarea: { fontSize: 16, color: colors.text, fontWeight: '500' },
+    textoTareaCompletada: { textDecorationLine: 'line-through', color: colors.textSecondary },
+    btnEliminarTarea: { padding: 5, paddingLeft: 15 },
 
-  estadoVacio: { alignItems: 'center', marginTop: 80 },
-  textoVacio: { fontSize: 18, fontWeight: 'bold', color: '#64748b', marginTop: 15 },
-  subtextoVacio: { fontSize: 14, color: '#94a3b8', marginTop: 5, textAlign: 'center', paddingHorizontal: 20 },
+    estadoVacio: { alignItems: 'center', marginTop: 80 },
+    textoVacio: { fontSize: 18, fontWeight: 'bold', color: colors.textSecondary, marginTop: 15 },
+    subtextoVacio: { fontSize: 14, color: colors.textTertiary, marginTop: 5, textAlign: 'center', paddingHorizontal: 20 },
 
-  fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: '#10b981', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: '#10b981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
+    fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: colors.success, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5, shadowColor: colors.success, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
-  modalTitulo: { fontSize: 20, fontWeight: 'bold' },
-  input: { backgroundColor: '#f1f5f9', padding: 18, borderRadius: 12, fontSize: 16, color: '#334155', marginBottom: 20 },
-  btnGuardarFull: { backgroundColor: '#10b981', padding: 18, borderRadius: 12, alignItems: 'center' },
-  btnGuardarTextoFull: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+    modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+    modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, alignItems: 'center' },
+    modalTitulo: { fontSize: 20, fontWeight: 'bold', color: colors.text },
 
-  btnNuevaSesion: { flexDirection: 'row', backgroundColor: '#0f172a', padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#0f172a', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
-  btnNuevaSesionTexto: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    inputTarea: { backgroundColor: isDark ? colors.background : '#f8fafc', padding: 18, borderRadius: 12, fontSize: 16, color: colors.text, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
+    btnGuardarTareaFull: { backgroundColor: colors.success, padding: 18, borderRadius: 12, alignItems: 'center' },
+    btnGuardarTextoFull: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 
-  inputConfig: { backgroundColor: '#f1f5f9', padding: 15, borderRadius: 12, fontSize: 16, color: '#334155', marginBottom: 20, marginTop: 5 },
+    btnNuevaSesion: { flexDirection: 'row', backgroundColor: colors.text, padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 4 },
+    btnNuevaSesionTexto: { color: colors.background, fontSize: 18, fontWeight: 'bold' },
 
-  configSeccion: { backgroundColor: 'white', padding: 20, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: '#e2e8f0' },
-  labelConfig: { fontSize: 14, fontWeight: 'bold', color: '#64748b' },
-  ramosSugeridosContainer: { flexDirection: 'row' },
-  ramoPildora: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#cbd5e1', marginRight: 10, backgroundColor: '#f8fafc' },
-  ramoPildoraTexto: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+    inputConfig: { backgroundColor: isDark ? colors.background : '#f8fafc', padding: 15, borderRadius: 12, fontSize: 16, color: colors.text, marginBottom: 20, marginTop: 5, borderWidth: 1, borderColor: colors.border },
 
-  toggleContainer: { flexDirection: 'row', backgroundColor: '#f1f5f9', borderRadius: 8, padding: 4, marginBottom: 20, marginTop: 5 },
-  toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
-  toggleBtnActive: { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  toggleText: { fontWeight: 'bold', color: '#64748b', fontSize: 13 },
-  toggleTextActive: { color: '#0f172a' },
+    configSeccion: { backgroundColor: isDark ? colors.background : 'white', padding: 20, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: colors.border },
+    labelConfig: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary },
+    ramosSugeridosContainer: { flexDirection: 'row' },
+    ramoPildora: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginRight: 10, backgroundColor: colors.surface },
+    ramoPildoraTexto: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
 
-  rowTiempos: { flexDirection: 'row', gap: 15, marginBottom: 25, marginTop: 5 },
-  cajaTiempoPicker: { flex: 1, backgroundColor: '#f8fafc', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: '#e2e8f0', borderStyle: 'dashed' },
-  iconoTituloTiempo: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, gap: 6 },
-  tituloTiempo: { fontSize: 14, fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' },
-  textoPickerTiempo: { fontSize: 24, fontWeight: 'bold', color: '#0f172a' },
-  textoSubPicker: { fontSize: 12, color: '#94a3b8', marginTop: 8 },
+    toggleContainer: { flexDirection: 'row', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 8, padding: 4, marginBottom: 20, marginTop: 5, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
+    toggleBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 6 },
+    toggleBtnActive: { backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 4, elevation: isDark ? 0 : 2 },
+    toggleText: { fontWeight: 'bold', color: colors.textSecondary, fontSize: 13 },
+    toggleTextActive: { color: colors.text },
 
-  btnIniciarSesion: { flexDirection: 'row', backgroundColor: '#10b981', padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  btnIniciarSesionTexto: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+    rowTiempos: { flexDirection: 'row', gap: 15, marginBottom: 25, marginTop: 5 },
+    cajaTiempoPicker: { flex: 1, backgroundColor: isDark ? colors.background : '#f8fafc', padding: 20, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+    iconoTituloTiempo: { flexDirection: 'row', alignItems: 'center', marginBottom: 15, gap: 6 },
+    tituloTiempo: { fontSize: 14, fontWeight: 'bold', color: colors.textTertiary, textTransform: 'uppercase' },
+    textoPickerTiempo: { fontSize: 24, fontWeight: 'bold', color: colors.text },
+    textoSubPicker: { fontSize: 12, color: colors.textSecondary, marginTop: 8 },
 
-  divider: { height: 1, backgroundColor: '#e2e8f0', marginVertical: 25 },
-  tituloSeccionHistorial: { fontSize: 18, fontWeight: 'bold', color: '#334155', marginBottom: 15 },
-  estadoVacioHistorial: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
-  textoVacioHistorial: { fontSize: 14, color: '#94a3b8', marginTop: 10, fontStyle: 'italic' },
+    btnIniciarSesion: { flexDirection: 'row', backgroundColor: colors.success, padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    btnIniciarSesionTexto: { color: 'white', fontSize: 18, fontWeight: 'bold' },
 
-  historialDiaContainer: { marginBottom: 20 },
-  historialFecha: { fontSize: 15, fontWeight: 'bold', color: '#0f172a', marginBottom: 10 },
-  historialItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', padding: 15, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: '#f1f5f9' },
-  puntoHistorial: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
-  historialTexto: { fontSize: 15, color: '#475569', flex: 1 },
+    divider: { height: 1, backgroundColor: colors.border, marginVertical: 25 },
+    tituloSeccionHistorial: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 15 },
+    estadoVacioHistorial: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
+    textoVacioHistorial: { fontSize: 14, color: colors.textSecondary, marginTop: 10, fontStyle: 'italic' },
 
-  timerActivoContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 50 },
-  badgeFase: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 15, gap: 8 },
-  textoFase: { fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },
-  ramoTimerTexto: { fontSize: 20, fontWeight: 'bold', color: '#334155', marginBottom: 40, textAlign: 'center', paddingHorizontal: 20 },
+    historialDiaContainer: { marginBottom: 20 },
+    historialFecha: { fontSize: 15, fontWeight: 'bold', color: colors.text, marginBottom: 10 },
+    historialItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 15, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
+    puntoHistorial: { width: 12, height: 12, borderRadius: 6, marginRight: 12 },
+    historialTexto: { fontSize: 15, color: colors.textSecondary, flex: 1 },
 
-  circuloTimerFondo: { width: 280, height: 280, borderRadius: 140, borderWidth: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 10 },
-  textoReloj: { fontSize: 56, fontWeight: 'bold', color: '#0f172a', letterSpacing: 2 },
-  textoSubReloj: { fontSize: 16, color: '#94a3b8', fontWeight: '600', marginTop: 5 },
+    timerActivoContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 50 },
+    badgeFase: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginBottom: 15, gap: 8 },
+    textoFase: { fontWeight: 'bold', fontSize: 14, letterSpacing: 1 },
+    ramoTimerTexto: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 40, textAlign: 'center', paddingHorizontal: 20 },
 
-  timerControles: { flexDirection: 'row', alignItems: 'center', marginTop: 50, gap: 30 },
-  btnControlStop: { width: 60, height: 60, borderRadius: 30, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center' },
-  btnControlPlayPause: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
-});
+    circuloTimerFondo: { width: 280, height: 280, borderRadius: 140, borderWidth: 12, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: isDark ? 0 : 0.1, shadowRadius: 20, elevation: isDark ? 0 : 10 },
+    textoReloj: { fontSize: 56, fontWeight: 'bold', color: colors.text, letterSpacing: 2 },
+    textoSubReloj: { fontSize: 16, color: colors.textSecondary, fontWeight: '600', marginTop: 5 },
+
+    timerControles: { flexDirection: 'row', alignItems: 'center', marginTop: 50, gap: 30 },
+    btnControlStop: { width: 60, height: 60, borderRadius: 30, backgroundColor: isDark ? colors.danger + '30' : '#fee2e2', justifyContent: 'center', alignItems: 'center' },
+    btnControlPlayPause: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.2, shadowRadius: 10, elevation: 6 },
+  });
+}
