@@ -1,106 +1,127 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useCallback } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TabView, SceneMap } from 'react-native-tab-view';
+
+// Importamos las pantallas directamente
+import RamosScreen from './ramos';
+import ApuntesScreen from './apuntes';
+import HorarioScreen from './horario';
+import IndexScreen from './index';
+import EventosScreen from './eventos';
+import EnfoqueScreen from './enfoque';
+import RendimientoScreen from './rendimiento';
+
+// Contexto de tabs
+import { TabProvider, useTabContext } from '../../context/TabContext';
 
 // IMPORTAMOS TU TEMA
 import { useTheme } from '../../context/ThemeContext';
 
-export default function TabLayout() {
+const ROUTES = [
+  { key: 'ramos',       title: 'Ramos'    },
+  { key: 'apuntes',     title: 'Apuntes'  },
+  { key: 'horario',     title: 'Horario'  },
+  { key: 'index',       title: 'Inicio'   },
+  { key: 'eventos',     title: 'Eventos'  },
+  { key: 'enfoque',     title: 'Estudio'  },
+  { key: 'rendimiento', title: 'Progreso' },
+];
+
+const ROUTE_ICONS: Record<string, (color: string) => React.ReactElement> = {
+  ramos:       (c) => <Ionicons name="school"        size={24} color={c} />,
+  apuntes:     (c) => <Ionicons name="document-text" size={24} color={c} />,
+  horario:     (c) => <Ionicons name="calendar"      size={24} color={c} />,
+  index:       (c) => <Ionicons name="home"           size={26} color={c} />,
+  eventos:     (c) => <Ionicons name="notifications"  size={24} color={c} />,
+  enfoque:     (c) => <MaterialCommunityIcons name="brain" size={26} color={c} />,
+  rendimiento: (c) => <Ionicons name="stats-chart"   size={24} color={c} />,
+};
+
+const renderScene = SceneMap({
+  ramos:       () => <RamosScreen />,
+  apuntes:     () => <ApuntesScreen />,
+  horario:     () => <HorarioScreen />,
+  index:       () => <IndexScreen />,
+  eventos:     () => <EventosScreen />,
+  enfoque:     () => <EnfoqueScreen />,
+  rendimiento: () => <RendimientoScreen />,
+});
+
+function TabLayoutInner() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { tabIndex, setTabIndex } = useTabContext();
+
+  const TAB_BAR_HEIGHT = 65 + insets.bottom;
+
+  const renderTabBar = useCallback((props: any) => {
+    return (
+      <View style={[
+        styles.tabBarContainer,
+        {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: TAB_BAR_HEIGHT,
+          paddingBottom: insets.bottom,
+          shadowOpacity: isDark ? 0 : 0.08,
+        }
+      ]}>
+        {props.navigationState.routes.map((route: any, i: number) => {
+          const isActive = props.navigationState.index === i;
+          const color = isActive ? colors.primary : colors.textSecondary;
+          return (
+            <TouchableOpacity
+              key={route.key}
+              style={styles.tabItem}
+              onPress={() => setTabIndex(i)}
+              activeOpacity={0.7}
+            >
+              {ROUTE_ICONS[route.key](color)}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }, [colors, isDark, insets.bottom, TAB_BAR_HEIGHT, setTabIndex]);
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        // OPTIMIZACIÓN 1: Congela las pantallas ocultas para máxima fluidez
-        freezeOnBlur: true,
-        // OPTIMIZACIÓN 2: Oculta la barra al abrir el teclado (mejora el rendimiento al escribir)
-        tabBarHideOnKeyboard: true,
-
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          elevation: isDark ? 0 : 8, // Quita la sombra en modo oscuro para un look más limpio
-          shadowOpacity: isDark ? 0 : 0.1,
-          height: 65 + insets.bottom,
-          paddingBottom: insets.bottom + 5,
-          paddingTop: 5,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
-        }
-      }}
-    >
-      <Tabs.Screen
-        name="ramos"
-        options={{
-          title: 'Ramos',
-          tabBarIcon: ({ color }) => <Ionicons name="school" size={24} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="apuntes"
-        options={{
-          title: 'Apuntes',
-          tabBarIcon: ({ color }) => <Ionicons name="document-text" size={24} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="horario"
-        options={{
-          title: 'Horario',
-          tabBarIcon: ({ color }) => <Ionicons name="calendar" size={24} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color }) => <Ionicons name="home" size={26} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="eventos"
-        options={{
-          title: 'Eventos',
-          tabBarIcon: ({ color }) => <Ionicons name="notifications" size={24} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="enfoque"
-        options={{
-          title: 'Estudio',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="brain" size={26} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="rendimiento"
-        options={{
-          title: 'Progreso',
-          tabBarIcon: ({ color }) => <Ionicons name="stats-chart" size={24} color={color} />,
-        }}
-      />
-
-      {/* Añadimos la pestaña de configuración pero la ocultamos de la barra inferior */}
-      <Tabs.Screen
-        name="configuracion"
-        options={{
-          href: null, // Esto hace que exista en el enrutador pero no aparezca un botón extra abajo
-        }}
-      />
-    </Tabs>
+    <TabView
+      navigationState={{ index: tabIndex, routes: ROUTES }}
+      renderScene={renderScene}
+      onIndexChange={setTabIndex}
+      tabBarPosition="bottom"
+      renderTabBar={renderTabBar}
+      lazy={false}
+      swipeEnabled={true}
+      animationEnabled={true}
+      overScrollMode="never"
+    />
   );
 }
+
+export default function TabLayout() {
+  return (
+    <TabProvider>
+      <TabLayoutInner />
+    </TabProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    elevation: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 8,
+  },
+  tabItem: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 8,
+  },
+});

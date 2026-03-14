@@ -206,7 +206,7 @@ export default function EnfoqueScreen() {
       {/* ========================================== */}
       {tabActiva === 'tareas' && !sesionIniciada && (
         <View style={{ flex: 1 }}>
-          <ScrollView contentContainerStyle={s.scrollContent}>
+          <ScrollView contentContainerStyle={s.scrollContent} removeClippedSubviews={false}>
             {tareasDeHoy.length === 0 ? (
               <View style={s.estadoVacio}>
                 <Ionicons name="list-outline" size={60} color={colors.border} />
@@ -242,7 +242,7 @@ export default function EnfoqueScreen() {
         <View style={{ flex: 1 }}>
 
           {!sesionIniciada ? (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 50, paddingTop: 10 }}>
+            <ScrollView showsVerticalScrollIndicator={false} removeClippedSubviews={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 50, paddingTop: 10 }}>
 
               <TouchableOpacity style={s.btnNuevaSesion} onPress={() => setModalConfigEstudioVisible(true)}>
                 <Ionicons name="add-circle" size={24} color="white" style={{ marginRight: 10 }} />
@@ -488,7 +488,7 @@ function buildStyles(colors: any, isDark: boolean) {
 
     inputConfig: { backgroundColor: isDark ? colors.background : '#f8fafc', padding: 15, borderRadius: 12, fontSize: 16, color: colors.text, marginBottom: 20, marginTop: 5, borderWidth: 1, borderColor: colors.border },
 
-    configSeccion: { backgroundColor: isDark ? colors.background : 'white', padding: 20, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: colors.border },
+    configSeccion: { backgroundColor: isDark ? colors.background : colors.surface, padding: 20, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: colors.border },
     labelConfig: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary },
     ramosSugeridosContainer: { flexDirection: 'row' },
     ramoPildora: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border, marginRight: 10, backgroundColor: colors.surface },

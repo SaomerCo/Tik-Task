@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useTabContext } from '../../context/TabContext';
 // IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA Y LAS NOTIFICACIONES
 import Bienvenida from '../../components/Bienvenida';
 import { sincronizarNotificaciones, solicitarPermisosNotificaciones } from '../../utils/Notificaciones';
@@ -13,6 +14,7 @@ import { sincronizarNotificaciones, solicitarPermisosNotificaciones } from '../.
 export default function Index() {
   const router = useRouter();
   const { bloquesHorario, eventosGlobales, tareasGlobales } = useAppContext();
+  const { setTabIndex } = useTabContext();
 
   // ── Sistema de temas ────────────────────────────────────────────────────
   const { colors, isDark } = useTheme();
@@ -147,7 +149,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/apuntes')}
+              onPress={() => setTabIndex(1)}
             >
               <View style={styles.iconWrapper}>
                 <View style={[styles.iconCircle, { backgroundColor: colors.dangerLight }]}>
@@ -164,7 +166,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/horario')}
+              onPress={() => setTabIndex(2)}
             >
               {tiempoRestante && (
                 <View style={styles.badgeTopContainer}>
@@ -194,7 +196,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/enfoque')}
+              onPress={() => setTabIndex(5)}
             >
               <View style={styles.iconWrapper}>
                 {estadoTareas === 'vacio' && (
@@ -225,7 +227,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/eventos')}
+              onPress={() => setTabIndex(4)}
             >
               <View style={styles.badgeTopContainer}>
                 <Text style={[styles.smallBadgeTop, dynamicStyles.smallBadgeTop]}>Evento cercano</Text>
@@ -257,7 +259,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/rendimiento')}
+              onPress={() => setTabIndex(6)}
             >
               <View style={styles.iconWrapper}>
                 <View style={[styles.iconCircle, { backgroundColor: colors.infoLight }]}>

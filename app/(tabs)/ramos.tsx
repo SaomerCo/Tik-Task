@@ -4,10 +4,9 @@ import React, { useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp, Layout } from 'react-native-reanimated';
 import { useAppContext } from '../../context/AppContext';
-
-// IMPORTACIONES DEL TEMA Y ENCABEZADO
 import Encabezado from '../../components/Encabezado';
 import { useTheme } from '../../context/ThemeContext';
+import { useTabContext } from '../../context/TabContext';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -15,10 +14,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function RamosScreen() {
   const router = useRouter();
-
-  // EXTRAEMOS LOS COLORES DEL TEMA
   const { colors, isDark } = useTheme();
   const s = buildStyles(colors, isDark);
+  const { setTabIndex } = useTabContext();
 
   const {
     ciclos, crearCiclo, editarCiclo, eliminarCiclo, toggleCicloActivo,
@@ -278,7 +276,7 @@ export default function RamosScreen() {
           </TouchableOpacity>
         </View>
       ) : (
-        <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
           {ciclos.map((ciclo: any) => {
             const isExpandido = ciclosExpandidos[ciclo.id] !== false;
 
@@ -373,7 +371,7 @@ export default function RamosScreen() {
                               <Ionicons name="calculator-outline" size={14} color={colors.textSecondary} />
                               <Text style={s.miniBotonTexto}>Notas</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={s.miniBoton} onPress={() => router.push({ pathname: '/apuntes', params: { ramoIdFiltro: ramo.id } })}>
+                            <TouchableOpacity style={s.miniBoton} onPress={() => setTabIndex(1)}>
                               <Ionicons name="document-text-outline" size={14} color={colors.textSecondary} />
                               <Text style={s.miniBotonTexto}>Apuntes</Text>
                             </TouchableOpacity>

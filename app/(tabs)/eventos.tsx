@@ -225,7 +225,7 @@ export default function EventosScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
         {eventosOrdenados.length === 0 ? (
           <View style={s.estadoVacio}>
             <Ionicons name="calendar-outline" size={60} color={colors.textSecondary} />
@@ -436,7 +436,7 @@ function buildStyles(colors: any, isDark: boolean) {
     container: { flex: 1, paddingHorizontal: 20, paddingTop: 10 },
 
     filtrosContainer: { paddingHorizontal: 20, paddingTop: 5, gap: 10 },
-    filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : 'white', borderWidth: 1, borderColor: colors.border },
+    filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : colors.surface, borderWidth: 1, borderColor: colors.border },
     filtroActivo: { backgroundColor: colors.text, borderColor: colors.text },
     filtroTexto: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
     filtroTextoActivo: { color: colors.background },
@@ -482,7 +482,7 @@ function buildStyles(colors: any, isDark: boolean) {
     toggleTextActive: { color: colors.text },
 
     ramosSugeridosContainer: { flexDirection: 'row', marginBottom: 15, marginTop: 5 },
-    ramoPildora: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8 },
+    ramoPildora: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, marginRight: 8, backgroundColor: isDark ? colors.background : colors.surface },
     ramoPildoraTexto: { fontSize: 13, fontWeight: 'bold' },
 
     label: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary, marginBottom: 8 },

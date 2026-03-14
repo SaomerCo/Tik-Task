@@ -50,7 +50,7 @@ export default function RendimientoScreen() {
                 colorActivo={colors.primary}
             />
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scrollContent}>
+            <ScrollView showsVerticalScrollIndicator={false} removeClippedSubviews={false} contentContainerStyle={s.scrollContent}>
 
                 <View style={s.gridMetricas}>
                     {/* TARJETA PROMEDIO (AZUL) */}
@@ -147,7 +147,7 @@ function buildStyles(colors: any, isDark: boolean) {
         divider: { height: 1, backgroundColor: colors.border, marginVertical: 25 },
         tituloSeccion: { fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 15 },
 
-        estadoVacio: { alignItems: 'center', marginTop: 20, padding: 30, backgroundColor: isDark ? colors.background : 'white', borderRadius: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
+        estadoVacio: { alignItems: 'center', marginTop: 20, padding: 30, backgroundColor: isDark ? colors.background : colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' },
         textoVacio: { fontSize: 15, color: colors.textSecondary, marginTop: 10, textAlign: 'center' },
 
         tarjetaRamo: { backgroundColor: colors.surface, padding: 15, borderRadius: 16, marginBottom: 15, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.03, shadowRadius: 5, elevation: isDark ? 0 : 2 },

@@ -8,9 +8,10 @@ interface EncabezadoProps {
     subtitulo: string;
     icono: keyof typeof Ionicons.glyphMap;
     colorActivo?: string;
+    label?: string;
 }
 
-export default function Encabezado({ titulo, subtitulo, icono, colorActivo }: EncabezadoProps) {
+export default function Encabezado({ titulo, subtitulo, icono, colorActivo, label }: EncabezadoProps) {
     const { colors, isDark } = useTheme();
 
     // Usamos el color primario si no se pasa uno específico

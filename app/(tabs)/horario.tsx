@@ -5,9 +5,9 @@ import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../context/AppContext';
 
-// IMPORTACIONES DEL TEMA Y ENCABEZADO
 import Encabezado from '../../components/Encabezado';
 import { useTheme } from '../../context/ThemeContext';
+import { useTabContext } from '../../context/TabContext';
 
 export default function HorarioScreen() {
   const router = useRouter();
@@ -26,9 +26,9 @@ export default function HorarioScreen() {
     eventosGlobales, agregarEvento
   } = useAppContext();
 
-  // EXTRAEMOS LOS COLORES DEL TEMA
   const { colors, isDark } = useTheme();
   const s = buildStyles(colors, isDark);
+  const { setTabIndex } = useTabContext();
 
   // PARÁMETROS DESDE EVENTOS
   const params = useLocalSearchParams();
@@ -89,7 +89,7 @@ export default function HorarioScreen() {
           <Text style={s.subtextoVacioGlobal}>
             Activa o crea un periodo de estudios para poder configurar un horario.
           </Text>
-          <TouchableOpacity style={[s.btnIrARamosGlobal, { backgroundColor: colors.primary }]} onPress={() => router.push('/ramos')}>
+          <TouchableOpacity style={[s.btnIrARamosGlobal, { backgroundColor: colors.primary }]} onPress={() => setTabIndex(0)}>
             <Text style={s.btnIrARamosTextoGlobal}>Ir a Ramos</Text>
             <Ionicons name="arrow-forward" size={18} color="white" style={{ marginLeft: 8 }} />
           </TouchableOpacity>
@@ -225,17 +225,6 @@ export default function HorarioScreen() {
           icono="calendar"
           colorActivo={colors.primary}
         />
-          <View style={{ position: 'absolute', right: 20, top: 40 }}>
-            {modoEdicion ? (
-              <TouchableOpacity style={[s.btnHecho, { backgroundColor: isDark ? colors.primary + '20' : '#eff6ff' }]} onPress={() => setModoEdicion(false)}>
-                <Text style={[s.textoHecho, { color: colors.primary }]}>Hecho</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity onPress={() => setMenuTopVisible(true)} style={{ padding: 5 }}>
-                <Ionicons name="ellipsis-vertical" size={24} color={colors.text} />
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
 
         {esModoSeleccion && (
@@ -254,7 +243,7 @@ export default function HorarioScreen() {
         </View>
       </View>
 
-      <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
 
         {eventosGlobales
           .filter((e: any) => e.temporal)
@@ -349,8 +338,28 @@ export default function HorarioScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* FAB DERECHO: Añadir bloque */}
       {!modoEdicion && !esModoSeleccion && (
         <TouchableOpacity style={[s.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={abrirModal}><Ionicons name="add" size={30} color="white" /></TouchableOpacity>
+      )}
+
+      {/* FAB IZQUIERDO: Editar / Hecho */}
+      {!esModoSeleccion && (
+        modoEdicion ? (
+          <TouchableOpacity
+            style={[s.fabEditar, { backgroundColor: colors.success, shadowColor: colors.success }]}
+            onPress={() => setModoEdicion(false)}
+          >
+            <Ionicons name="checkmark" size={26} color="white" />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[s.fabEditar, { backgroundColor: colors.surface, shadowColor: '#000', borderWidth: 1, borderColor: colors.border }]}
+            onPress={() => setModoEdicion(true)}
+          >
+            <Ionicons name="pencil" size={22} color={colors.text} />
+          </TouchableOpacity>
+        )
       )}
 
       <Modal animationType="fade" transparent={true} visible={menuTopVisible} onRequestClose={() => setMenuTopVisible(false)}>
@@ -397,12 +406,18 @@ export default function HorarioScreen() {
                     </TouchableOpacity>
                     {mostrarDropdown && (
                       <View style={s.dropdownListContainer}>
-                        {ramosGlobales.map((ramo: any) => (
-                          <TouchableOpacity key={ramo.id} style={s.dropdownItem} onPress={() => seleccionarRamo(ramo)}>
-                            <View style={[s.colorDot, { backgroundColor: ramo.colorHex }]} />
-                            <Text style={s.dropdownItemText}>{ramo.nombre}</Text>
-                          </TouchableOpacity>
-                        ))}
+                        <ScrollView
+                          nestedScrollEnabled={true}
+                          showsVerticalScrollIndicator={true}
+                          keyboardShouldPersistTaps="handled"
+                        >
+                          {ramosGlobales.map((ramo: any) => (
+                            <TouchableOpacity key={ramo.id} style={s.dropdownItem} onPress={() => seleccionarRamo(ramo)}>
+                              <View style={[s.colorDot, { backgroundColor: ramo.colorHex }]} />
+                              <Text style={s.dropdownItemText}>{ramo.nombre}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
                       </View>
                     )}
                     {ramoSeleccionado && ramoSeleccionado.etiquetas && ramoSeleccionado.etiquetas.length > 0 && (
@@ -528,6 +543,7 @@ function buildStyles(colors: any, isDark: boolean) {
     btnIrARamosTextoGlobal: { color: 'white', fontSize: 16, fontWeight: 'bold' },
 
     fab: { position: 'absolute', bottom: 20, right: 20, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+    fabEditar: { position: 'absolute', bottom: 20, left: 20, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
 
     modalOverlayTop: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.5)' : 'rgba(0,0,0,0.2)', alignItems: 'flex-end', paddingRight: 20, paddingTop: 90 },
     menuTopContent: { backgroundColor: colors.surface, borderRadius: 12, padding: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 5, width: 200, borderWidth: 1, borderColor: colors.border },
@@ -556,7 +572,7 @@ function buildStyles(colors: any, isDark: boolean) {
 
     dropdownButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 10, padding: 15, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
     dropdownButtonText: { fontSize: 16, color: colors.text, fontWeight: '500' },
-    dropdownListContainer: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginTop: 5, maxHeight: 150, overflow: 'hidden' },
+    dropdownListContainer: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 10, marginTop: 5, maxHeight: 200 },
     dropdownItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
     colorDot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
     dropdownItemText: { fontSize: 16, color: colors.text },

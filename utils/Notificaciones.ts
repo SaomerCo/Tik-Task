@@ -7,6 +7,8 @@ Notifications.setNotificationHandler({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
     }),
 });
 
@@ -65,7 +67,7 @@ export async function sincronizarNotificaciones(bloquesHorario: any[], eventosGl
                     sound: true,
                 },
                 trigger: {
-                    repeats: true, // Esto hace que suene todas las semanas el mismo día
+                    type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
                     weekday: dayIndex,
                     hour: dateAlerta.getHours(),
                     minute: dateAlerta.getMinutes(),
@@ -97,6 +99,7 @@ export async function sincronizarNotificaciones(bloquesHorario: any[], eventosGl
                             sound: true,
                         },
                         trigger: {
+                            type: Notifications.SchedulableTriggerInputTypes.DATE,
                             date: fechaAlerta, // Fecha exacta
                         },
                     });

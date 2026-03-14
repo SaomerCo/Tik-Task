@@ -5,17 +5,17 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAppContext } from '../../context/AppContext';
 
-// IMPORTACIONES DEL TEMA Y ENCABEZADO
 import Encabezado from '../../components/Encabezado';
 import { useTheme } from '../../context/ThemeContext';
+import { useTabContext } from '../../context/TabContext';
 
 export default function ApuntesScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
-    // EXTRAEMOS LOS COLORES DEL TEMA
     const { colors, isDark } = useTheme();
     const s = buildStyles(colors, isDark);
+    const { setTabIndex } = useTabContext();
 
     const { ramosGlobales, apuntesGlobales, agregarApunte, actualizarApunte, eliminarApunte } = useAppContext();
 
@@ -139,7 +139,7 @@ export default function ApuntesScreen() {
 
     const irAEventos = () => {
         setModalVisible(false);
-        router.push('/eventos');
+        setTabIndex(4);
     };
 
     return (
@@ -174,7 +174,7 @@ export default function ApuntesScreen() {
                 </ScrollView>
             </View>
 
-            <ScrollView style={s.container} showsVerticalScrollIndicator={false}>
+            <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
                 {apuntesFiltrados.length === 0 ? (
                     <View style={s.estadoVacio}>
                         <View style={s.iconoFondoVacio}><Ionicons name="document-text-outline" size={48} color={colors.textSecondary} /></View>
@@ -341,7 +341,7 @@ function buildStyles(colors: any, isDark: boolean) {
         mainContainer: { flex: 1, backgroundColor: colors.background },
 
         filtrosContainer: { paddingHorizontal: 20, paddingTop: 15, gap: 10 },
-        filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : 'white', borderWidth: 1, borderColor: colors.border },
+        filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : colors.surface, borderWidth: 1, borderColor: colors.border },
         filtroActivo: { backgroundColor: colors.text, borderColor: colors.text },
         filtroTexto: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
         filtroTextoActivo: { color: colors.background },
