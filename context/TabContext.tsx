@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 
 interface TabContextType {
   tabIndex: number;
@@ -7,7 +7,7 @@ interface TabContextType {
 
 const TabContext = createContext<TabContextType>({
   tabIndex: 3,
-  setTabIndex: () => {},
+  setTabIndex: () => { },
 });
 
 export function TabProvider({ children }: { children: React.ReactNode }) {
@@ -30,19 +30,21 @@ export function useTabContext() {
 
 // Mapa de rutas a índices para navegación desde cualquier screen
 export const ROUTE_TO_INDEX: Record<string, number> = {
-  '/ramos':       0,
-  'ramos':        0,
-  '/apuntes':     1,
-  'apuntes':      1,
-  '/horario':     2,
-  'horario':      2,
-  '/index':       3,
-  'index':        3,
-  '/':            3,
-  '/eventos':     4,
-  'eventos':      4,
-  '/enfoque':     5,
-  'enfoque':      5,
+  '/ramos': 0,
+  'ramos': 0,
+  '/apuntes': 1,
+  'apuntes': 1,
+  '/horario': 2,
+  'horario': 2,
+  '/index': 3,
+  'index': 3,
+  '/': 3,
+  '/eventos': 4,
+  'eventos': 4,
+  '/enfoque': 5,
+  'enfoque': 5,
   '/rendimiento': 6,
-  'rendimiento':  6,
+  'rendimiento': 6,
+  '/configuracion': 7,
+  'configuracion': 7,
 };

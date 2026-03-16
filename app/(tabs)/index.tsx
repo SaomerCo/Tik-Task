@@ -5,12 +5,11 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useTabContext } from '../../context/TabContext';
+import { useTheme } from '../../context/ThemeContext';
 // IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA Y LAS NOTIFICACIONES
 import Bienvenida from '../../components/Bienvenida';
 import { sincronizarNotificaciones, solicitarPermisosNotificaciones } from '../../utils/Notificaciones';
-
 export default function Index() {
   const router = useRouter();
   const { bloquesHorario, eventosGlobales, tareasGlobales } = useAppContext();
@@ -276,7 +275,7 @@ export default function Index() {
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
-              onPress={() => router.push('/configuracion')}
+              onPress={() => setTabIndex(7)}
             >
               <View style={styles.iconWrapper}>
                 <View style={[styles.iconCircle, dynamicStyles.iconCircleGray]}>

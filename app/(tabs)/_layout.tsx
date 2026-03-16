@@ -12,6 +12,7 @@ import IndexScreen from './index';
 import EventosScreen from './eventos';
 import EnfoqueScreen from './enfoque';
 import RendimientoScreen from './rendimiento';
+import ConfiguracionScreen from './configuracion';
 
 // Contexto de tabs
 import { TabProvider, useTabContext } from '../../context/TabContext';
@@ -20,13 +21,14 @@ import { TabProvider, useTabContext } from '../../context/TabContext';
 import { useTheme } from '../../context/ThemeContext';
 
 const ROUTES = [
-  { key: 'ramos',       title: 'Ramos'    },
-  { key: 'apuntes',     title: 'Apuntes'  },
-  { key: 'horario',     title: 'Horario'  },
-  { key: 'index',       title: 'Inicio'   },
-  { key: 'eventos',     title: 'Eventos'  },
-  { key: 'enfoque',     title: 'Estudio'  },
-  { key: 'rendimiento', title: 'Progreso' },
+  { key: 'ramos',          title: 'Ramos'         },
+  { key: 'apuntes',        title: 'Apuntes'       },
+  { key: 'horario',        title: 'Horario'       },
+  { key: 'index',          title: 'Inicio'        },
+  { key: 'eventos',        title: 'Eventos'       },
+  { key: 'enfoque',        title: 'Estudio'       },
+  { key: 'rendimiento',    title: 'Progreso'      },
+  { key: 'configuracion',  title: 'Ajustes'       },
 ];
 
 const ROUTE_ICONS: Record<string, (color: string) => React.ReactElement> = {
@@ -40,13 +42,14 @@ const ROUTE_ICONS: Record<string, (color: string) => React.ReactElement> = {
 };
 
 const renderScene = SceneMap({
-  ramos:       () => <RamosScreen />,
-  apuntes:     () => <ApuntesScreen />,
-  horario:     () => <HorarioScreen />,
-  index:       () => <IndexScreen />,
-  eventos:     () => <EventosScreen />,
-  enfoque:     () => <EnfoqueScreen />,
-  rendimiento: () => <RendimientoScreen />,
+  ramos:          () => <RamosScreen />,
+  apuntes:        () => <ApuntesScreen />,
+  horario:        () => <HorarioScreen />,
+  index:          () => <IndexScreen />,
+  eventos:        () => <EventosScreen />,
+  enfoque:        () => <EnfoqueScreen />,
+  rendimiento:    () => <RendimientoScreen />,
+  configuracion:  () => <ConfiguracionScreen />,
 });
 
 function TabLayoutInner() {
@@ -69,6 +72,8 @@ function TabLayoutInner() {
         }
       ]}>
         {props.navigationState.routes.map((route: any, i: number) => {
+          // Configuracion no aparece en la barra de navegación
+          if (route.key === 'configuracion') return null;
           const isActive = props.navigationState.index === i;
           const color = isActive ? colors.primary : colors.textSecondary;
           return (
