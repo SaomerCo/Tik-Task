@@ -7,9 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 import { useTabContext } from '../../context/TabContext';
 import { useTheme } from '../../context/ThemeContext';
-// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA Y LAS NOTIFICACIONES
+// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA
 import Bienvenida from '../../components/Bienvenida';
-import { sincronizarNotificaciones, solicitarPermisosNotificaciones } from '../../utils/Notificaciones';
+
 export default function Index() {
   const router = useRouter();
   const { bloquesHorario, eventosGlobales, tareasGlobales } = useAppContext();
@@ -75,18 +75,6 @@ export default function Index() {
     const intervalo = setInterval(calcularEventoProximo, 60000);
     return () => clearInterval(intervalo);
   }, [bloquesHorario]);
-
-  // ── Sincronizador Automático de Notificaciones ─────────────────────────
-  useEffect(() => {
-    const setupAlertas = async () => {
-      const permisoConcedido = await solicitarPermisosNotificaciones();
-      if (permisoConcedido) {
-        await sincronizarNotificaciones(bloquesHorario || [], eventosGlobales || []);
-      }
-    };
-    setupAlertas();
-  }, [bloquesHorario, eventosGlobales]);
-  // ───────────────────────────────────────────────────────────────────────
 
   const eventoAgendaProximo = eventosGlobales && eventosGlobales.length > 0
     ? [...eventosGlobales]

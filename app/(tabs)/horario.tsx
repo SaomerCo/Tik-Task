@@ -6,8 +6,8 @@ import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 import { useAppContext } from '../../context/AppContext';
 
 import Encabezado from '../../components/Encabezado';
-import { useTheme } from '../../context/ThemeContext';
 import { useTabContext } from '../../context/TabContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function HorarioScreen() {
   const router = useRouter();
@@ -56,10 +56,33 @@ export default function HorarioScreen() {
   const [showPickerInicio, setShowPickerInicio] = useState(false);
   const [showPickerFin, setShowPickerFin] = useState(false);
 
-  const formatearHora = (fecha: Date) => `${fecha.getHours().toString().padStart(2, '0')}:${fecha.getMinutes().toString().padStart(2, '0')}`;
+  // NUEVO: Formateo de Hora en formato AM/PM
+  const formatearHora = (fecha: Date) => {
+    let horas = fecha.getHours();
+    let minutos = fecha.getMinutes();
+    const ampm = horas >= 12 ? 'PM' : 'AM';
+    horas = horas % 12;
+    horas = horas ? horas : 12; // el 0 debe ser 12
+    return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')} ${ampm}`;
+  };
+
   const onChangeInicio = (event: any, selectedDate?: Date) => { setShowPickerInicio(false); if (selectedDate) setHoraInicio(selectedDate); };
   const onChangeFin = (event: any, selectedDate?: Date) => { setShowPickerFin(false); if (selectedDate) setHoraFin(selectedDate); };
-  const convertirAMinutos = (horaStr: string) => { if (!horaStr || !horaStr.includes(':')) return 0; const [h, m] = horaStr.split(':'); return parseInt(h) * 60 + parseInt(m); };
+  
+  // NUEVO: Conversor a minutos inteligente (Soporta 24h antiguo y AM/PM nuevo)
+  const convertirAMinutos = (horaStr: string) => { 
+    if (!horaStr || !horaStr.includes(':')) return 0; 
+    let [hStr, mStr] = horaStr.split(':'); 
+    let h = parseInt(hStr); 
+    let m = parseInt(mStr.replace(/[^0-9]/g, '')); // Extrae solo los números
+    
+    // Ajuste para formato AM/PM
+    if (horaStr.toLowerCase().includes('pm') && h !== 12) h += 12;
+    if (horaStr.toLowerCase().includes('am') && h === 12) h = 0;
+    
+    return h * 60 + m; 
+  };
+
   const formatearTiempoLibre = (minutosTotales: number) => {
     const horas = Math.floor(minutosTotales / 60);
     const minutos = minutosTotales % 60;
@@ -217,14 +240,13 @@ export default function HorarioScreen() {
 
       <View style={s.headerContainer}>
         <View style={s.headerFlex}>
-          {/* USAMOS EL NUEVO ENCABEZADO SOLO PARA EL TÍTULO */}
-        <Encabezado
-          label="AGENDA"
-          titulo="Horario"
-          subtitulo="Tu semana organizada"
-          icono="calendar"
-          colorActivo={colors.primary}
-        />
+          <Encabezado
+            label="AGENDA"
+            titulo="Horario"
+            subtitulo="Tu semana organizada"
+            icono="calendar"
+            colorActivo={colors.primary}
+          />
         </View>
 
         {esModoSeleccion && (
@@ -291,8 +313,8 @@ export default function HorarioScreen() {
                     opacidadBaja && { backgroundColor: isDark ? colors.background : '#f1f5f9', opacity: 0.5, borderLeftColor: colors.border }
                   ]}>
                     <View style={s.horaContainer}>
-                      <Text style={[s.horaTexto, opacidadBaja && { color: colors.textSecondary }]}>{clase.horaInicio}</Text>
-                      <Text style={s.horaFin}>{clase.horaFin}</Text>
+                      <Text style={[s.horaTexto, opacidadBaja && { color: colors.textSecondary }]} numberOfLines={1}>{clase.horaInicio}</Text>
+                      <Text style={s.horaFin} numberOfLines={1}>{clase.horaFin}</Text>
                     </View>
 
                     <View style={s.infoContainer}>
@@ -473,8 +495,9 @@ export default function HorarioScreen() {
               </View>
             </View>
 
-            {showPickerInicio && <DateTimePicker value={horaInicio} mode="time" is24Hour={true} display="default" onChange={onChangeInicio} />}
-            {showPickerFin && <DateTimePicker value={horaFin} mode="time" is24Hour={true} display="default" onChange={onChangeFin} />}
+            {/* SE AÑADIÓ is24Hour={false} AQUÍ PARA EL FORMATO AM/PM */}
+            {showPickerInicio && <DateTimePicker value={horaInicio} mode="time" is24Hour={false} display="default" onChange={onChangeInicio} />}
+            {showPickerFin && <DateTimePicker value={horaFin} mode="time" is24Hour={false} display="default" onChange={onChangeFin} />}
 
             <View style={s.modalBotones}>
               <TouchableOpacity style={s.btnCancelar} onPress={() => setModalVisible(false)}><Text style={s.btnCancelarTexto}>Cancelar</Text></TouchableOpacity>
@@ -490,13 +513,12 @@ export default function HorarioScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Estilos Dinámicos (Integrando colores del tema)
+// Estilos Dinámicos
 // ─────────────────────────────────────────────────────────────────────────────
 function buildStyles(colors: any, isDark: boolean) {
   return StyleSheet.create({
     mainContainer: { flex: 1, backgroundColor: colors.background },
 
-    // Ahora el HeaderContainer solo tiene un pequeño padding porque el Encabezado ya tiene el suyo
     headerContainer: { backgroundColor: colors.surface, paddingHorizontal: 0, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.border },
     headerFlex: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     tituloPrincipal: { fontSize: 28, fontWeight: 'bold', color: colors.text },
@@ -516,9 +538,12 @@ function buildStyles(colors: any, isDark: boolean) {
     container: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
 
     tarjeta: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 15, marginBottom: 10, borderLeftWidth: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: isDark ? 0 : 3, borderWidth: 1, borderColor: colors.border },
-    horaContainer: { width: 65, borderRightWidth: 1, borderRightColor: colors.border, justifyContent: 'center', alignItems: 'center', paddingRight: 10, marginRight: 15 },
-    horaTexto: { fontSize: 18, fontWeight: 'bold', color: colors.text },
-    horaFin: { fontSize: 12, color: colors.textSecondary, marginTop: 4 },
+    
+    // MODIFICADO: Contenedor más ancho y fuentes ajustadas para el AM/PM
+    horaContainer: { width: 85, borderRightWidth: 1, borderRightColor: colors.border, justifyContent: 'center', alignItems: 'center', paddingRight: 10, marginRight: 15 },
+    horaTexto: { fontSize: 15, fontWeight: 'bold', color: colors.text, textAlign: 'center' },
+    horaFin: { fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+    
     infoContainer: { flex: 1, justifyContent: 'center', paddingRight: 5 },
     tituloFila: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 },
     materiaTexto: { fontSize: 18, fontWeight: 'bold', color: colors.text, flex: 1, paddingRight: 5 },
@@ -534,7 +559,6 @@ function buildStyles(colors: any, isDark: boolean) {
     textoVacio: { fontSize: 20, fontWeight: 'bold', color: colors.textSecondary, marginTop: 15 },
     subtextoVacio: { fontSize: 14, color: colors.textTertiary, marginTop: 5, textAlign: 'center' },
 
-    // ESTILOS ESTADO VACÍO GLOBAL (SIN CICLO)
     estadoVacioGlobal: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, marginTop: -60 },
     iconoFondoVacioGlobal: { width: 100, height: 100, borderRadius: 50, justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
     textoVacioGlobal: { fontSize: 22, fontWeight: 'bold', color: colors.text, marginBottom: 10 },

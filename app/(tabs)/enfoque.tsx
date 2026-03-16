@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
@@ -10,13 +10,57 @@ import Encabezado from '../../components/Encabezado';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function EnfoqueScreen() {
-  const { tareasGlobales, agregarTarea, eliminarTarea, toggleCompletarTarea, actualizarTarea, ramosGlobales, sesionesEstudio, agregarSesionEstudio } = useAppContext();
+  // AÑADIMOS "registrarHistorialTareas" AL CONTEXTO (Lo crearemos en el Paso 2)
+  const { tareasGlobales, agregarTarea, eliminarTarea, toggleCompletarTarea, actualizarTarea, ramosGlobales, sesionesEstudio, agregarSesionEstudio, registrarHistorialTareas } = useAppContext();
 
   // EXTRAEMOS LOS COLORES DEL TEMA
   const { colors, isDark } = useTheme();
   const s = buildStyles(colors, isDark);
 
   const [tabActiva, setTabActiva] = useState<'pomodoro' | 'tareas'>('pomodoro');
+
+  const hoyStr = new Date().toLocaleDateString('es-ES');
+
+  // ==========================================
+  // DETECTOR DE MEDIANOCHE / RESETEO DE TAREAS
+  // ==========================================
+  useEffect(() => {
+    if (!tareasGlobales || tareasGlobales.length === 0) return;
+
+    // Buscamos si hay tareas registradas de días anteriores
+    const tareasViejas = tareasGlobales.filter((t: any) => t.fechaCreacion !== hoyStr);
+
+    if (tareasViejas.length > 0) {
+      // Agrupamos las tareas por fecha (por si no abrió la app en varios días)
+      const fechasAntiguas = [...new Set(tareasViejas.map((t: any) => t.fechaCreacion))];
+
+      fechasAntiguas.forEach((fechaAnterior: any) => {
+        const tareasDelDia = tareasViejas.filter((t: any) => t.fechaCreacion === fechaAnterior);
+        const completadas = tareasDelDia.filter((t: any) => t.completada).length;
+        const totales = tareasDelDia.length;
+        const porcentaje = Math.round((completadas / totales) * 100);
+
+        // 1. Guardar el rendimiento del día en el historial
+        if (registrarHistorialTareas) {
+          registrarHistorialTareas({
+            id: Math.random().toString(),
+            fecha: fechaAnterior,
+            completadas,
+            totales,
+            porcentaje
+          });
+        }
+      });
+
+      // 2. Reiniciar los hábitos para HOY (Desmarcar todo y actualizar fecha)
+      tareasViejas.forEach((tarea: any) => {
+        actualizarTarea(tarea.id, {
+          completada: false,
+          fechaCreacion: hoyStr
+        });
+      });
+    }
+  }, [tareasGlobales]);
 
   // ==========================================
   // LÓGICA DE TAREAS DIARIAS
@@ -42,13 +86,13 @@ export default function EnfoqueScreen() {
     if (tareaAEditarId) {
       actualizarTarea(tareaAEditarId, { texto: nuevaTareaTexto.trim() });
     } else {
-      agregarTarea({ id: Math.random().toString(), texto: nuevaTareaTexto.trim(), completada: false, fechaCreacion: new Date().toLocaleDateString('es-ES') });
+      agregarTarea({ id: Math.random().toString(), texto: nuevaTareaTexto.trim(), completada: false, fechaCreacion: hoyStr });
     }
     setNuevaTareaTexto('');
     setModalTareaVisible(false);
   };
 
-  const tareasDeHoy = tareasGlobales ? tareasGlobales.filter((t: any) => t.fechaCreacion === new Date().toLocaleDateString('es-ES')) : [];
+  const tareasDeHoy = tareasGlobales ? tareasGlobales.filter((t: any) => t.fechaCreacion === hoyStr) : [];
 
   // ==========================================
   // LÓGICA DE SESIÓN DE ESTUDIO 
@@ -448,9 +492,7 @@ export default function EnfoqueScreen() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Estilos Dinámicos (Integrando colores del tema)
-// ─────────────────────────────────────────────────────────────────────────────
+// ... EL RESTO DE TUS ESTILOS buildStyles() SE QUEDAN EXACTAMENTE IGUAL ...
 function buildStyles(colors: any, isDark: boolean) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },

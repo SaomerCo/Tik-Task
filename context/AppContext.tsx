@@ -1,21 +1,100 @@
-import React, { createContext, useContext, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const AppContext = createContext<any>(null);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
+  // ESTADO DE CARGA: Evita que la app intente guardar arrays vacíos antes de leer el disco duro
+  const [datosCargados, setDatosCargados] = useState(false);
 
+  // --- ESTADOS GLOBALES ---
   const [ciclos, setCiclos] = useState<any[]>([]);
   const [actividadesGlobales, setActividadesGlobales] = useState<any[]>([]);
   const [bloquesHorario, setBloquesHorario] = useState<any[]>([]);
   const [apuntesGlobales, setApuntesGlobales] = useState<any[]>([]);
   const [eventosGlobales, setEventosGlobales] = useState<any[]>([]);
   const [tareasGlobales, setTareasGlobales] = useState<any[]>([]);
-
-  // NUEVO: Memoria global de Sesiones de Estudio
   const [sesionesEstudio, setSesionesEstudio] = useState<any[]>([]);
+  const [historialTareasGlobales, setHistorialTareasGlobales] = useState<any[]>([]);
 
+  // =========================================================================
+  // 1. CARGAR DATOS AL INICIAR LA APP (Lee el disco duro)
+  // =========================================================================
+  useEffect(() => {
+    const cargarDatosGuardados = async () => {
+      try {
+        const ciclosGuardados = await AsyncStorage.getItem('@ciclos');
+        if (ciclosGuardados) setCiclos(JSON.parse(ciclosGuardados));
+
+        const actividadesGuardadas = await AsyncStorage.getItem('@actividades');
+        if (actividadesGuardadas) setActividadesGlobales(JSON.parse(actividadesGuardadas));
+
+        const bloquesGuardados = await AsyncStorage.getItem('@bloques');
+        if (bloquesGuardados) setBloquesHorario(JSON.parse(bloquesGuardados));
+
+        const apuntesGuardados = await AsyncStorage.getItem('@apuntes');
+        if (apuntesGuardados) setApuntesGlobales(JSON.parse(apuntesGuardados));
+
+        const eventosGuardados = await AsyncStorage.getItem('@eventos');
+        if (eventosGuardados) setEventosGlobales(JSON.parse(eventosGuardados));
+
+        const tareasGuardadas = await AsyncStorage.getItem('@tareas');
+        if (tareasGuardadas) setTareasGlobales(JSON.parse(tareasGuardadas));
+
+        const sesionesGuardadas = await AsyncStorage.getItem('@sesiones');
+        if (sesionesGuardadas) setSesionesEstudio(JSON.parse(sesionesGuardadas));
+
+        const historialGuardado = await AsyncStorage.getItem('@historial');
+        if (historialGuardado) setHistorialTareasGlobales(JSON.parse(historialGuardado));
+
+      } catch (error) {
+        console.error('Error al cargar la base de datos local:', error);
+      } finally {
+        setDatosCargados(true);
+      }
+    };
+
+    cargarDatosGuardados();
+  }, []);
+
+  // =========================================================================
+  // 2. GUARDAR DATOS AUTOMÁTICAMENTE CUANDO CAMBIAN
+  // =========================================================================
+  useEffect(() => {
+    if (!datosCargados) return; 
+
+    const guardarDatosEnDisco = async () => {
+      try {
+        await AsyncStorage.setItem('@ciclos', JSON.stringify(ciclos));
+        await AsyncStorage.setItem('@actividades', JSON.stringify(actividadesGlobales));
+        await AsyncStorage.setItem('@bloques', JSON.stringify(bloquesHorario));
+        await AsyncStorage.setItem('@apuntes', JSON.stringify(apuntesGlobales));
+        await AsyncStorage.setItem('@eventos', JSON.stringify(eventosGlobales));
+        await AsyncStorage.setItem('@tareas', JSON.stringify(tareasGlobales));
+        await AsyncStorage.setItem('@sesiones', JSON.stringify(sesionesEstudio));
+        await AsyncStorage.setItem('@historial', JSON.stringify(historialTareasGlobales));
+      } catch (error) {
+        console.error('Error al guardar en disco:', error);
+      }
+    };
+
+    guardarDatosEnDisco();
+  }, [
+    ciclos, actividadesGlobales, bloquesHorario, apuntesGlobales, 
+    eventosGlobales, tareasGlobales, sesionesEstudio, historialTareasGlobales, datosCargados
+  ]);
+
+  // --- FUNCIONES DE RENDIMIENTO Y ESTUDIO ---
   const agregarSesionEstudio = (nuevaSesion: any) => {
     setSesionesEstudio(prev => [nuevaSesion, ...prev]);
+  };
+
+  const registrarHistorialTareas = (nuevoRegistro: any) => {
+    setHistorialTareasGlobales(prev => {
+      const existe = prev.find(h => h.fecha === nuevoRegistro.fecha);
+      if (existe) return prev;
+      return [...prev, nuevoRegistro];
+    });
   };
 
   // --- FUNCIONES DE EVENTOS ---
@@ -371,6 +450,9 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const cicloActivo = ciclos.find(c => c.activo) || null;
   const ramosGlobales = cicloActivo ? cicloActivo.ramos : [];
 
+  // Evitamos que la app se renderice y sobreescriba datos antes de cargar el disco duro
+  if (!datosCargados) return null;
+
   return (
     <AppContext.Provider value={{
       ciclos, crearCiclo, editarCiclo, eliminarCiclo, toggleCicloActivo,
@@ -384,7 +466,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       apuntesGlobales, agregarApunte, eliminarApunte, actualizarApunte,
       eventosGlobales, agregarEvento, eliminarEvento, editarEvento,
       tareasGlobales, agregarTarea, eliminarTarea, toggleCompletarTarea, actualizarTarea,
-      sesionesEstudio, agregarSesionEstudio // <-- AÑADIDO AL CONTEXTO
+      sesionesEstudio, agregarSesionEstudio,
+      historialTareasGlobales, registrarHistorialTareas
     }}>
       {children}
     </AppContext.Provider>
