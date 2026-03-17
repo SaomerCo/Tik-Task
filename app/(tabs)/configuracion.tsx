@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemeMode, useTheme } from '../../context/ThemeContext';
@@ -12,9 +13,25 @@ export default function Configuracion() {
   const { colors, isDark, themeMode, setThemeMode } = useTheme();
   const s = buildStyles(colors, isDark);
 
-  // CONTADOR PARA EL EASTER EGG
+  // CONTADOR PARA EL EASTER EGG Y ESTADO DE DESBLOQUEO
   const [clickCount, setClickCount] = useState(0);
+  const [secretoDesbloqueado, setSecretoDesbloqueado] = useState(false);
   const clickTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // VERIFICAR SI YA ESTABA DESBLOQUEADO EN LA MEMORIA
+  useEffect(() => {
+    const revisarSecreto = async () => {
+      try {
+        const estado = await AsyncStorage.getItem('@tema_dennise_desbloqueado');
+        if (estado === 'true') {
+          setSecretoDesbloqueado(true);
+        }
+      } catch (error) {
+        console.error('Error leyendo secreto:', error);
+      }
+    };
+    revisarSecreto();
+  }, []);
 
   // OPCIONES BASE DEL TEMA
   const baseOptions: { mode: ThemeMode; label: string; description: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -23,20 +40,22 @@ export default function Configuracion() {
     { mode: 'system', label: 'Usar ajuste del sistema', description: 'Se adapta automáticamente a la preferencia de tu dispositivo', icon: 'phone-portrait' },
   ];
 
-  // SI EL TEMA DENNISE ESTÁ ACTIVO, LO AÑADIMOS A LA LISTA VISUAL
-  if (themeMode === 'dennise') {
-    baseOptions.push({ mode: 'dennise', label: 'Tema Dennise', description: 'Tema especial secreto desbloqueado 🌸', icon: 'heart' });
+  // SI EL TEMA DENNISE ESTÁ ACTIVO O YA FUE DESBLOQUEADO, LO AÑADIMOS A LA LISTA
+  if (themeMode === 'dennise' || secretoDesbloqueado) {
+    baseOptions.push({ mode: 'dennise', label: 'Tema Dennise', description: 'Tema especial desbloqueado para siempre 🌸', icon: 'heart' });
   }
 
-  const manejarClickTema = (mode: ThemeMode) => {
-    // Lógica del Easter Egg: Solo contamos si toca 'light'
-    if (mode === 'light') {
+  const manejarClickTema = async (mode: ThemeMode) => {
+    // Lógica del Easter Egg: Solo contamos si toca 'light' y aún no está desbloqueado
+    if (mode === 'light' && !secretoDesbloqueado) {
       const nuevosClicks = clickCount + 1;
       setClickCount(nuevosClicks);
 
-      // Si llega a 20 clics
+      // Si llega a 20 clics, lo desbloqueamos para siempre
       if (nuevosClicks === 20) {
-        Alert.alert("🌸 ¡Secreto Desbloqueado! 🌸", "Has descubierto el Tema Dennise.");
+        Alert.alert("🌸 ¡Secreto Desbloqueado! 🌸", "Has descubierto el Tema Dennise. Ahora estará siempre disponible en tu lista.");
+        setSecretoDesbloqueado(true);
+        await AsyncStorage.setItem('@tema_dennise_desbloqueado', 'true'); // Guardar en disco duro
         setThemeMode('dennise');
         setClickCount(0); // Reiniciamos
         return;

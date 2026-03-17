@@ -4,18 +4,16 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Bienvenida from '../../components/Bienvenida';
 import { useAppContext } from '../../context/AppContext';
 import { useTabContext } from '../../context/TabContext';
 import { useTheme } from '../../context/ThemeContext';
-// IMPORTAMOS NUESTRA NUEVA PANTALLA DE BIENVENIDA
-import Bienvenida from '../../components/Bienvenida';
 
 export default function Index() {
   const router = useRouter();
   const { bloquesHorario, eventosGlobales, tareasGlobales } = useAppContext();
   const { setTabIndex } = useTabContext();
 
-  // ── Sistema de temas ────────────────────────────────────────────────────
   const { colors, isDark } = useTheme();
 
   const [tiempoRestante, setTiempoRestante] = useState<string | null>(null);
@@ -92,7 +90,6 @@ export default function Index() {
   if (tareasTotal > 0 && tareasPendientes > 0) estadoTareas = 'pendientes';
   if (tareasTotal > 0 && tareasPendientes === 0) estadoTareas = 'completadas';
 
-  // ── Estilos dinámicos (dependen del tema) ──────────────────────────────
   const dynamicStyles = {
     container: { backgroundColor: colors.background },
     fecha: { color: colors.textSecondary },
@@ -110,7 +107,6 @@ export default function Index() {
     <SafeAreaView style={[styles.container, dynamicStyles.container]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
 
-      {/* RENDERIZAMOS EL MODAL DE BIENVENIDA */}
       <Bienvenida onCompletado={setNombreUsuario} />
 
       <View style={styles.header}>
@@ -124,10 +120,7 @@ export default function Index() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        // ────────────────────────────────────────────────────────
-        // ESTA ES LA MEJORA AGREGADA: EVITA EL PARPADEO
         removeClippedSubviews={false}
-      // ────────────────────────────────────────────────────────
       >
         <View style={styles.gridContainer}>
 
@@ -179,16 +172,23 @@ export default function Index() {
           </View>
 
           <View style={styles.row}>
-            {/* Tarjeta Tareas */}
+            {/* ──────────────────────────────────────────────────────── */}
+            {/* TARJETA DE TAREAS (NUEVO ESTADO VACÍO CTA) */}
+            {/* ──────────────────────────────────────────────────────── */}
             <TouchableOpacity
-              style={[styles.gridItem, dynamicStyles.gridItem]}
+              style={[
+                styles.gridItem, 
+                dynamicStyles.gridItem,
+                // Si está vacío, le damos un borde y fondo punteado o sutil para que resalte como "acción pendiente"
+                estadoTareas === 'vacio' && { backgroundColor: isDark ? colors.background : '#f8fafc', borderColor: colors.border, borderStyle: 'dashed' }
+              ]}
               activeOpacity={0.8}
               onPress={() => setTabIndex(5)}
             >
               <View style={styles.iconWrapper}>
                 {estadoTareas === 'vacio' && (
-                  <View style={[styles.iconCircle, dynamicStyles.iconCircleGray]}>
-                    <Ionicons name="list" size={32} color={colors.textSecondary} />
+                  <View style={[styles.iconCircle, { backgroundColor: colors.success + '15' }]}>
+                    <Ionicons name="add" size={32} color={colors.success} />
                   </View>
                 )}
                 {estadoTareas === 'pendientes' && (
@@ -203,10 +203,20 @@ export default function Index() {
                 )}
               </View>
               <View style={styles.textWrapper}>
-                <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Tareas</Text>
-                {estadoTareas === 'vacio' && <Text style={[styles.gridSubtitle, dynamicStyles.gridSubtitle]}>Ninguna para hoy</Text>}
-                {estadoTareas === 'pendientes' && <Text style={[styles.gridSubtitle, { color: colors.warning, fontWeight: 'bold' }]}>{tareasPendientes} pendientes</Text>}
-                {estadoTareas === 'completadas' && <Text style={[styles.gridSubtitle, { color: colors.success, fontWeight: 'bold' }]}>¡Todo listo!</Text>}
+                {estadoTareas === 'vacio' ? (
+                  <>
+                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Sin tareas aún</Text>
+                    <View style={[styles.ctaButton, { backgroundColor: colors.success }]}>
+                      <Text style={styles.ctaButtonText}>Crear una ahora</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Tareas</Text>
+                    {estadoTareas === 'pendientes' && <Text style={[styles.gridSubtitle, { color: colors.warning, fontWeight: 'bold' }]}>{tareasPendientes} pendientes</Text>}
+                    {estadoTareas === 'completadas' && <Text style={[styles.gridSubtitle, { color: colors.success, fontWeight: 'bold' }]}>¡Todo listo!</Text>}
+                  </>
+                )}
               </View>
             </TouchableOpacity>
 
@@ -259,7 +269,7 @@ export default function Index() {
               </View>
             </TouchableOpacity>
 
-            {/* Tarjeta Configuración → navega a /configuracion */}
+            {/* Tarjeta Configuración */}
             <TouchableOpacity
               style={[styles.gridItem, dynamicStyles.gridItem]}
               activeOpacity={0.8}
@@ -283,7 +293,6 @@ export default function Index() {
   );
 }
 
-// ── Solo estilos que NO dependen del tema (layout / dimensiones estáticas) ──
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -383,4 +392,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // NUEVO ESTILO PARA EL BOTÓN CTA (Call To Action) DE TAREAS VACÍAS
+  ctaButton: {
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  ctaButtonText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: 'bold',
+  }
 });

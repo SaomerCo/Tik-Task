@@ -1,10 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -41,23 +38,22 @@ export default function ApuntesScreen() {
 
     // =====================================================================
     // LÓGICA DE EXPORTAR E IMPORTAR APUNTES (.estudyl)
+    // --- COMENTADO TEMPORALMENTE A PETICIÓN DEL USUARIO ---
     // =====================================================================
+    /*
     const exportarApunte = async (apunte: any) => {
         try {
-            // 1. Convertimos las imágenes a Base64 (Texto)
             const imagenesBase64 = await Promise.all(
                 (apunte.imagenes || []).map(async (imgUri: string) => {
-                    return await FileSystem.readAsStringAsync(imgUri, { encoding: FileSystem.EncodingType.Base64 });
+                    return await FileSystem.readAsStringAsync(imgUri, { encoding: 'base64' });
                 })
             );
 
-            // 2. Convertimos el audio a Base64 (Texto)
             let audioBase64 = null;
             if (apunte.audio) {
-                audioBase64 = await FileSystem.readAsStringAsync(apunte.audio, { encoding: FileSystem.EncodingType.Base64 });
+                audioBase64 = await FileSystem.readAsStringAsync(apunte.audio, { encoding: 'base64' });
             }
 
-            // 3. Empaquetamos todo en un objeto
             const paqueteExportacion = {
                 tipo: 'ESTUDYL_APUNTE',
                 version: '1.0',
@@ -70,12 +66,10 @@ export default function ApuntesScreen() {
                 }
             };
 
-            // 4. Creamos un archivo temporal en el celular
             const nombreArchivo = (apunte.titulo || 'Apunte').replace(/[^a-zA-Z0-9]/g, '_');
             const fileUri = `${FileSystem.cacheDirectory}${nombreArchivo}.estudyl`;
             await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(paqueteExportacion));
 
-            // 5. Abrimos el menú de compartir de Android (Bluetooth, Quick Share, etc.)
             const sePuedeCompartir = await Sharing.isAvailableAsync();
             if (sePuedeCompartir) {
                 await Sharing.shareAsync(fileUri, {
@@ -94,21 +88,17 @@ export default function ApuntesScreen() {
 
     const importarApunte = async () => {
         try {
-            // 1. Abrimos el explorador de archivos del celular
             const resultado = await DocumentPicker.getDocumentAsync({
-                type: '*/*',
+                type: '* /*',
                 copyToCacheDirectory: true
             });
 
             if (resultado.canceled || !resultado.assets || resultado.assets.length === 0) return;
 
             const fileUri = resultado.assets[0].uri;
-
-            // 2. Leemos el archivo
             const contenidoString = await FileSystem.readAsStringAsync(fileUri);
             const paquete = JSON.parse(contenidoString);
 
-            // Verificamos que sea un archivo de Estudyl válido
             if (paquete.tipo !== 'ESTUDYL_APUNTE' || !paquete.datos) {
                 Alert.alert('Archivo Inválido', 'Este archivo no es un apunte compatible con Estudyl.');
                 return;
@@ -116,27 +106,24 @@ export default function ApuntesScreen() {
 
             const { titulo, contenido, imagenesBase64, audioBase64 } = paquete.datos;
 
-            // 3. Reconstruimos las imágenes
             const nuevasImagenesUris = [];
             for (let i = 0; i < (imagenesBase64 || []).length; i++) {
                 const imgUri = `${FileSystem.documentDirectory}img_importada_${Date.now()}_${i}.jpg`;
-                await FileSystem.writeAsStringAsync(imgUri, imagenesBase64[i], { encoding: FileSystem.EncodingType.Base64 });
+                await FileSystem.writeAsStringAsync(imgUri, imagenesBase64[i], { encoding: 'base64' });
                 nuevasImagenesUris.push(imgUri);
             }
 
-            // 4. Reconstruimos el audio
             let nuevoAudioUri = null;
             if (audioBase64) {
                 nuevoAudioUri = `${FileSystem.documentDirectory}audio_importado_${Date.now()}.m4a`;
-                await FileSystem.writeAsStringAsync(nuevoAudioUri, audioBase64, { encoding: FileSystem.EncodingType.Base64 });
+                await FileSystem.writeAsStringAsync(nuevoAudioUri, audioBase64, { encoding: 'base64' });
             }
 
-            // 5. Guardamos en la base de datos local
             agregarApunte({
                 id: Math.random().toString(),
                 titulo: `${titulo} (Importado)`,
                 contenido: contenido,
-                ramoId: 'general', // Lo guardamos en general por defecto
+                ramoId: 'general',
                 fecha: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }),
                 imagenes: nuevasImagenesUris,
                 audio: nuevoAudioUri
@@ -149,6 +136,7 @@ export default function ApuntesScreen() {
             Alert.alert('Error al Importar', 'Asegúrate de haber seleccionado un archivo .estudyl válido.');
         }
     };
+    */
     // =====================================================================
 
     useEffect(() => {
@@ -336,7 +324,6 @@ export default function ApuntesScreen() {
                 colorActivo={colors.danger}
             />
 
-            {/* BOTONES SUPERIORES (FILTROS E IMPORTAR) */}
             <View style={s.barraSuperiorContainer}>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtrosContainer}>
                     <TouchableOpacity style={[s.filtroPildora, filtroActual === 'todos' && s.filtroActivo]} onPress={() => setFiltroActual('todos')}>
@@ -352,10 +339,11 @@ export default function ApuntesScreen() {
                     ))}
                 </ScrollView>
 
-                {/* BOTÓN DE IMPORTAR APUNTE */}
+                {/* BOTÓN DE IMPORTAR COMENTADO TEMPORALMENTE 
                 <TouchableOpacity style={[s.btnImportar, { backgroundColor: isDark ? colors.surfaceElevated : '#f1f5f9' }]} onPress={importarApunte}>
                     <Ionicons name="download-outline" size={22} color={colors.primary} />
                 </TouchableOpacity>
+                */}
             </View>
 
             <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
@@ -363,7 +351,7 @@ export default function ApuntesScreen() {
                     <View style={s.estadoVacio}>
                         <View style={s.iconoFondoVacio}><Ionicons name="document-text-outline" size={48} color={colors.textSecondary} /></View>
                         <Text style={s.textoVacio}>No hay apuntes aquí</Text>
-                        <Text style={s.subtextoVacio}>Toca el botón + para crear una nota. También puedes importar apuntes de tus amigos.</Text>
+                        <Text style={s.subtextoVacio}>Toca el botón + para crear una nota y guardar información importante.</Text>
                     </View>
                 ) : (
                     <View style={s.gridNotas}>
@@ -380,11 +368,11 @@ export default function ApuntesScreen() {
                                         </View>
                                         
                                         <View style={{ flexDirection: 'row', gap: 10 }}>
-                                            {/* BOTÓN DE COMPARTIR */}
+                                            {/* BOTÓN DE COMPARTIR COMENTADO TEMPORALMENTE 
                                             <TouchableOpacity onPress={(e) => { e.stopPropagation(); exportarApunte(apunte); }} style={{ padding: 2 }}>
                                                 <Ionicons name="share-outline" size={18} color={colors.primary} />
                                             </TouchableOpacity>
-                                            {/* BOTÓN DE BORRAR */}
+                                            */}
                                             <TouchableOpacity onPress={(e) => { e.stopPropagation(); confirmarEliminacion(apunte.id); }} style={{ padding: 2 }}>
                                                 <Ionicons name="trash-outline" size={18} color={colors.danger} />
                                             </TouchableOpacity>
@@ -431,7 +419,6 @@ export default function ApuntesScreen() {
                 <Ionicons name="add" size={30} color="white" />
             </TouchableOpacity>
 
-            {/* MODAL EDITAR/NUEVO APUNTE */}
             <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.modalOverlay}>
                     <View style={s.modalContent}>

@@ -247,6 +247,13 @@ export default function EventosScreen() {
                     <Text style={[s.badgeTexto, { color: colorFinal }]}>{ev.tipo}</Text>
                   </View>
 
+                  {/* NUEVO: MOSTRAR EL NOMBRE DEL RAMO ENCIMA DEL TÍTULO */}
+                  {ramoVinculado && (
+                    <Text style={[s.ramoAsociadoTexto, { color: colorFinal }]}>
+                        {ramoVinculado.nombre}
+                    </Text>
+                  )}
+
                   <Text style={s.tituloEvento} numberOfLines={2}>{ev.titulo}</Text>
 
                   <View style={s.fechaContainer}>
@@ -446,6 +453,9 @@ function buildStyles(colors: any, isDark: boolean) {
 
     badgeTipo: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginBottom: 6 },
     badgeTexto: { fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+
+    // NUEVO ESTILO: Título del Ramo
+    ramoAsociadoTexto: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', marginBottom: 2, letterSpacing: 0.5 },
 
     tituloEvento: { fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 6 },
     fechaContainer: { flexDirection: 'row', alignItems: 'center' },

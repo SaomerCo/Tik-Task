@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useState } from 'react';
-import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppContext } from '../../context/AppContext';
 
@@ -10,28 +11,23 @@ import Encabezado from '../../components/Encabezado';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function EnfoqueScreen() {
-  // AÑADIMOS "registrarHistorialTareas" AL CONTEXTO (Lo crearemos en el Paso 2)
-  const { tareasGlobales, agregarTarea, eliminarTarea, toggleCompletarTarea, actualizarTarea, ramosGlobales, sesionesEstudio, agregarSesionEstudio, registrarHistorialTareas } = useAppContext();
+  const { tareasGlobales, agregarTarea, eliminarTarea, actualizarTarea, ramosGlobales, sesionesEstudio, agregarSesionEstudio, registrarHistorialTareas } = useAppContext();
 
-  // EXTRAEMOS LOS COLORES DEL TEMA
   const { colors, isDark } = useTheme();
   const s = buildStyles(colors, isDark);
 
   const [tabActiva, setTabActiva] = useState<'pomodoro' | 'tareas'>('pomodoro');
-
   const hoyStr = new Date().toLocaleDateString('es-ES');
 
   // ==========================================
-  // DETECTOR DE MEDIANOCHE / RESETEO DE TAREAS
+  // DETECTOR DE MEDIANOCHE
   // ==========================================
   useEffect(() => {
     if (!tareasGlobales || tareasGlobales.length === 0) return;
 
-    // Buscamos si hay tareas registradas de días anteriores
     const tareasViejas = tareasGlobales.filter((t: any) => t.fechaCreacion !== hoyStr);
 
     if (tareasViejas.length > 0) {
-      // Agrupamos las tareas por fecha (por si no abrió la app en varios días)
       const fechasAntiguas = [...new Set(tareasViejas.map((t: any) => t.fechaCreacion))];
 
       fechasAntiguas.forEach((fechaAnterior: any) => {
@@ -40,7 +36,6 @@ export default function EnfoqueScreen() {
         const totales = tareasDelDia.length;
         const porcentaje = Math.round((completadas / totales) * 100);
 
-        // 1. Guardar el rendimiento del día en el historial
         if (registrarHistorialTareas) {
           registrarHistorialTareas({
             id: Math.random().toString(),
@@ -52,7 +47,6 @@ export default function EnfoqueScreen() {
         }
       });
 
-      // 2. Reiniciar los hábitos para HOY (Desmarcar todo y actualizar fecha)
       tareasViejas.forEach((tarea: any) => {
         actualizarTarea(tarea.id, {
           completada: false,
@@ -60,14 +54,68 @@ export default function EnfoqueScreen() {
         });
       });
     }
-  }, [tareasGlobales]);
+  }, [hoyStr]);
 
   // ==========================================
-  // LÓGICA DE TAREAS DIARIAS
+  // LÓGICA DE TAREAS DIARIAS (¡100% 0 LAG!)
   // ==========================================
   const [modalTareaVisible, setModalTareaVisible] = useState(false);
   const [nuevaTareaTexto, setNuevaTareaTexto] = useState('');
   const [tareaAEditarId, setTareaAEditarId] = useState<string | null>(null);
+  const [modoEdicion, setModoEdicion] = useState(false);
+
+  const [tareasLocales, setTareasLocales] = useState<any[]>([]);
+  const tareasLocalesRef = useRef(tareasLocales);
+  const tareasGlobalesRef = useRef(tareasGlobales);
+
+  useEffect(() => { tareasLocalesRef.current = tareasLocales; }, [tareasLocales]);
+  useEffect(() => { tareasGlobalesRef.current = tareasGlobales; }, [tareasGlobales]);
+
+  useEffect(() => {
+    const tareasHoyGlobal = tareasGlobales ? tareasGlobales.filter((t: any) => t.fechaCreacion === hoyStr) : [];
+    setTareasLocales(prevLocales => {
+        return tareasHoyGlobal.map(tg => {
+            const localMatch = prevLocales.find(l => l.id === tg.id);
+            if (localMatch) {
+                return { ...tg, completada: localMatch.completada };
+            }
+            return tg;
+        });
+    });
+  }, [tareasGlobales, hoyStr]);
+
+  // 1. TOGGLE INSTANTÁNEO
+  const handleToggleInstantaneo = (id: string) => {
+    setTareasLocales(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada } : t));
+  };
+
+  const sincronizarConGlobal = useCallback(() => {
+    const locales = tareasLocalesRef.current;
+    const globales = tareasGlobalesRef.current;
+    if (!locales || !globales) return;
+
+    locales.forEach(loc => {
+        const glob = globales.find((g: any) => g.id === loc.id);
+        if (glob && glob.completada !== loc.completada) {
+            actualizarTarea(loc.id, { completada: loc.completada });
+        }
+    });
+  }, [actualizarTarea]);
+
+  useFocusEffect(
+    useCallback(() => {
+        return () => sincronizarConGlobal();
+    }, [sincronizarConGlobal])
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+        if (nextAppState === 'background' || nextAppState === 'inactive') {
+            sincronizarConGlobal();
+        }
+    });
+    return () => subscription.remove();
+  }, [sincronizarConGlobal]);
 
   const abrirModalNuevaTarea = () => {
     setTareaAEditarId(null);
@@ -81,18 +129,40 @@ export default function EnfoqueScreen() {
     setModalTareaVisible(true);
   };
 
+  // 2. GUARDAR / EDITAR INSTANTÁNEO (OPTIMISTIC UI)
   const guardarTarea = () => {
     if (!nuevaTareaTexto.trim()) return;
+    const textoFinal = nuevaTareaTexto.trim();
+
     if (tareaAEditarId) {
-      actualizarTarea(tareaAEditarId, { texto: nuevaTareaTexto.trim() });
+      // Cambio visual Inmediato
+      setTareasLocales(prev => prev.map(t => t.id === tareaAEditarId ? { ...t, texto: textoFinal } : t));
+      // Guardado en BD en segundo plano
+      requestAnimationFrame(() => actualizarTarea(tareaAEditarId, { texto: textoFinal }));
     } else {
-      agregarTarea({ id: Math.random().toString(), texto: nuevaTareaTexto.trim(), completada: false, fechaCreacion: hoyStr });
+      const nuevaTarea = { id: Math.random().toString(), texto: textoFinal, completada: false, fechaCreacion: hoyStr };
+      // Cambio visual Inmediato
+      setTareasLocales(prev => [...prev, nuevaTarea]);
+      // Guardado en BD en segundo plano
+      requestAnimationFrame(() => agregarTarea(nuevaTarea));
     }
+    
     setNuevaTareaTexto('');
     setModalTareaVisible(false);
   };
 
-  const tareasDeHoy = tareasGlobales ? tareasGlobales.filter((t: any) => t.fechaCreacion === hoyStr) : [];
+  // 3. ELIMINAR INSTANTÁNEO (OPTIMISTIC UI)
+  const confirmarEliminarTarea = (id: string) => {
+    Alert.alert('Eliminar Tarea', '¿Estás seguro de que quieres borrar este hábito/tarea?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => {
+            // Cambio visual Inmediato
+            setTareasLocales(prev => prev.filter(t => t.id !== id));
+            // Eliminación en BD en segundo plano
+            requestAnimationFrame(() => eliminarTarea(id));
+        }}
+    ]);
+  };
 
   // ==========================================
   // LÓGICA DE SESIÓN DE ESTUDIO 
@@ -117,7 +187,6 @@ export default function EnfoqueScreen() {
   const getSegundosEnfoque = () => fechaEnfoque.getHours() * 3600 + fechaEnfoque.getMinutes() * 60;
   const getSegundosDescanso = () => fechaDescanso.getHours() * 3600 + fechaDescanso.getMinutes() * 60;
 
-  // FUNCIÓN PARA GUARDAR Y SALIR
   const guardarSesionYSalir = () => {
     if (tiempoEstudiadoAcumulado >= 60) {
       const dateStr = new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -212,9 +281,6 @@ export default function EnfoqueScreen() {
   const ramoActivo = ramosGlobales.find((r: any) => r.id === ramoSeleccionadoId);
   const colorSesion = esFaseDescanso ? colors.success : (ramoActivo ? ramoActivo.colorHex : colors.primary);
 
-  // ==========================================
-  // AGRUPAR HISTORIAL DE ESTUDIO POR DÍA
-  // ==========================================
   const historialPorDia = sesionesEstudio.reduce((acc: any, sesion: any) => {
     if (!acc[sesion.fecha]) acc[sesion.fecha] = [];
     acc[sesion.fecha].push(sesion);
@@ -251,31 +317,64 @@ export default function EnfoqueScreen() {
       {tabActiva === 'tareas' && !sesionIniciada && (
         <View style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={s.scrollContent} removeClippedSubviews={false}>
-            {tareasDeHoy.length === 0 ? (
+            {tareasLocales.length === 0 ? (
               <View style={s.estadoVacio}>
                 <Ionicons name="list-outline" size={60} color={colors.border} />
                 <Text style={s.textoVacio}>No hay tareas para hoy</Text>
                 <Text style={s.subtextoVacio}>Añade hábitos como "Tomar 2L de agua" o "Leer 20 pags".</Text>
               </View>
             ) : (
-              tareasDeHoy.map((tarea: any) => (
-                <View key={tarea.id} style={s.tarjetaTarea}>
-                  <TouchableOpacity onPress={() => toggleCompletarTarea(tarea.id)} style={s.checkContainer}>
+              tareasLocales.map((tarea: any) => (
+                <TouchableOpacity 
+                    key={tarea.id} 
+                    style={s.tarjetaTarea} 
+                    activeOpacity={0.7} 
+                    onPress={() => handleToggleInstantaneo(tarea.id)}
+                >
+                  <View style={s.checkContainer}>
                     <Ionicons name={tarea.completada ? "checkmark-circle" : "ellipse-outline"} size={28} color={tarea.completada ? colors.success : colors.textSecondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={{ flex: 1 }} onPress={() => abrirModalEditarTarea(tarea)} activeOpacity={0.6}>
+                  </View>
+                  
+                  <View style={{ flex: 1, paddingRight: 10 }}>
                     <Text style={[s.textoTarea, tarea.completada && s.textoTareaCompletada]}>{tarea.texto}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => eliminarTarea(tarea.id)} style={s.btnEliminarTarea}>
-                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                  </TouchableOpacity>
-                </View>
+                  </View>
+
+                  {modoEdicion && (
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                        <TouchableOpacity style={[s.btnAccionOculto, { backgroundColor: isDark ? colors.primary + '20' : '#e0e7ff' }]} onPress={() => abrirModalEditarTarea(tarea)}>
+                            <Ionicons name="pencil" size={18} color={colors.primary} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[s.btnAccionOculto, { backgroundColor: isDark ? colors.danger + '20' : '#fee2e2' }]} onPress={() => confirmarEliminarTarea(tarea.id)}>
+                            <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                        </TouchableOpacity>
+                    </View>
+                  )}
+                </TouchableOpacity>
               ))
             )}
           </ScrollView>
-          <TouchableOpacity style={s.fab} onPress={abrirModalNuevaTarea}>
-            <Ionicons name="add" size={30} color="white" />
-          </TouchableOpacity>
+
+          {modoEdicion ? (
+            <TouchableOpacity
+                style={[s.fabEditar, { backgroundColor: colors.success, shadowColor: colors.success }]}
+                onPress={() => setModoEdicion(false)}
+            >
+                <Ionicons name="checkmark" size={26} color="white" />
+            </TouchableOpacity>
+            ) : (
+            <TouchableOpacity
+                style={[s.fabEditar, { backgroundColor: colors.surface, shadowColor: '#000', borderWidth: 1, borderColor: colors.border }]}
+                onPress={() => setModoEdicion(true)}
+            >
+                <Ionicons name="pencil" size={22} color={colors.text} />
+            </TouchableOpacity>
+          )}
+
+          {!modoEdicion && (
+            <TouchableOpacity style={s.fab} onPress={abrirModalNuevaTarea}>
+              <Ionicons name="add" size={30} color="white" />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -492,7 +591,6 @@ export default function EnfoqueScreen() {
   );
 }
 
-// ... EL RESTO DE TUS ESTILOS buildStyles() SE QUEDAN EXACTAMENTE IGUAL ...
 function buildStyles(colors: any, isDark: boolean) {
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -508,7 +606,10 @@ function buildStyles(colors: any, isDark: boolean) {
     checkContainer: { marginRight: 15 },
     textoTarea: { fontSize: 16, color: colors.text, fontWeight: '500' },
     textoTareaCompletada: { textDecorationLine: 'line-through', color: colors.textSecondary },
-    btnEliminarTarea: { padding: 5, paddingLeft: 15 },
+    
+    btnAccionOculto: { padding: 8, borderRadius: 8, marginLeft: 4 },
+    
+    fabEditar: { position: 'absolute', bottom: 20, left: 20, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
 
     estadoVacio: { alignItems: 'center', marginTop: 80 },
     textoVacio: { fontSize: 18, fontWeight: 'bold', color: colors.textSecondary, marginTop: 15 },

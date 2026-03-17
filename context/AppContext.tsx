@@ -4,10 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 const AppContext = createContext<any>(null);
 
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
-  // ESTADO DE CARGA: Evita que la app intente guardar arrays vacíos antes de leer el disco duro
   const [datosCargados, setDatosCargados] = useState(false);
 
-  // --- ESTADOS GLOBALES ---
   const [ciclos, setCiclos] = useState<any[]>([]);
   const [actividadesGlobales, setActividadesGlobales] = useState<any[]>([]);
   const [bloquesHorario, setBloquesHorario] = useState<any[]>([]);
@@ -18,7 +16,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const [historialTareasGlobales, setHistorialTareasGlobales] = useState<any[]>([]);
 
   // =========================================================================
-  // 1. CARGAR DATOS AL INICIAR LA APP (Lee el disco duro)
+  // 1. CARGAR DATOS AL INICIAR LA APP
   // =========================================================================
   useEffect(() => {
     const cargarDatosGuardados = async () => {
@@ -46,49 +44,33 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
 
         const historialGuardado = await AsyncStorage.getItem('@historial');
         if (historialGuardado) setHistorialTareasGlobales(JSON.parse(historialGuardado));
-
       } catch (error) {
         console.error('Error al cargar la base de datos local:', error);
       } finally {
         setDatosCargados(true);
       }
     };
-
     cargarDatosGuardados();
   }, []);
 
   // =========================================================================
-  // 2. GUARDAR DATOS AUTOMÁTICAMENTE CUANDO CAMBIAN
+  // 2. GUARDAR DATOS AUTOMÁTICAMENTE (¡OPTIMIZADO PARA ELIMINAR EL LAG!)
   // =========================================================================
-  useEffect(() => {
-    if (!datosCargados) return; 
+  // Ahora cada dato tiene su propio canal de guardado independiente.
+  // Si tocas una tarea, SOLO se ejecutan las líneas de las tareas.
 
-    const guardarDatosEnDisco = async () => {
-      try {
-        await AsyncStorage.setItem('@ciclos', JSON.stringify(ciclos));
-        await AsyncStorage.setItem('@actividades', JSON.stringify(actividadesGlobales));
-        await AsyncStorage.setItem('@bloques', JSON.stringify(bloquesHorario));
-        await AsyncStorage.setItem('@apuntes', JSON.stringify(apuntesGlobales));
-        await AsyncStorage.setItem('@eventos', JSON.stringify(eventosGlobales));
-        await AsyncStorage.setItem('@tareas', JSON.stringify(tareasGlobales));
-        await AsyncStorage.setItem('@sesiones', JSON.stringify(sesionesEstudio));
-        await AsyncStorage.setItem('@historial', JSON.stringify(historialTareasGlobales));
-      } catch (error) {
-        console.error('Error al guardar en disco:', error);
-      }
-    };
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@ciclos', JSON.stringify(ciclos)); }, [ciclos, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@actividades', JSON.stringify(actividadesGlobales)); }, [actividadesGlobales, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@bloques', JSON.stringify(bloquesHorario)); }, [bloquesHorario, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@apuntes', JSON.stringify(apuntesGlobales)); }, [apuntesGlobales, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@eventos', JSON.stringify(eventosGlobales)); }, [eventosGlobales, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@tareas', JSON.stringify(tareasGlobales)); }, [tareasGlobales, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@sesiones', JSON.stringify(sesionesEstudio)); }, [sesionesEstudio, datosCargados]);
+  useEffect(() => { if (datosCargados) AsyncStorage.setItem('@historial', JSON.stringify(historialTareasGlobales)); }, [historialTareasGlobales, datosCargados]);
 
-    guardarDatosEnDisco();
-  }, [
-    ciclos, actividadesGlobales, bloquesHorario, apuntesGlobales, 
-    eventosGlobales, tareasGlobales, sesionesEstudio, historialTareasGlobales, datosCargados
-  ]);
+  // =========================================================================
 
-  // --- FUNCIONES DE RENDIMIENTO Y ESTUDIO ---
-  const agregarSesionEstudio = (nuevaSesion: any) => {
-    setSesionesEstudio(prev => [nuevaSesion, ...prev]);
-  };
-
+  const agregarSesionEstudio = (nuevaSesion: any) => setSesionesEstudio(prev => [nuevaSesion, ...prev]);
   const registrarHistorialTareas = (nuevoRegistro: any) => {
     setHistorialTareasGlobales(prev => {
       const existe = prev.find(h => h.fecha === nuevoRegistro.fecha);
@@ -97,33 +79,24 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  // --- FUNCIONES DE EVENTOS ---
-  const agregarEvento = (nuevoEvento: any) => setEventosGlobales([nuevoEvento, ...eventosGlobales]);
-  const eliminarEvento = (id: string) => setEventosGlobales(eventosGlobales.filter(e => e.id !== id));
+  const agregarEvento = (nuevoEvento: any) => setEventosGlobales(prev => [nuevoEvento, ...prev]);
+  const eliminarEvento = (id: string) => setEventosGlobales(prev => prev.filter(e => e.id !== id));
   const editarEvento = (id: string, eventoActualizado: any) => setEventosGlobales(prev => prev.map(ev => ev.id === id ? eventoActualizado : ev));
 
-  // --- FUNCIONES DE APUNTES ---
-  const agregarApunte = (nuevoApunte: any) => setApuntesGlobales([nuevoApunte, ...apuntesGlobales]);
-  const eliminarApunte = (id: string) => setApuntesGlobales(apuntesGlobales.filter(a => a.id !== id));
-  const actualizarApunte = (id: string, datosActualizados: any) => setApuntesGlobales(apuntesGlobales.map(a => a.id === id ? { ...a, ...datosActualizados } : a));
+  const agregarApunte = (nuevoApunte: any) => setApuntesGlobales(prev => [nuevoApunte, ...prev]);
+  const eliminarApunte = (id: string) => setApuntesGlobales(prev => prev.filter(a => a.id !== id));
+  const actualizarApunte = (id: string, datosActualizados: any) => setApuntesGlobales(prev => prev.map(a => a.id === id ? { ...a, ...datosActualizados } : a));
 
-  // --- FUNCIONES DE TAREAS ---
-  const agregarTarea = (nuevaTarea: any) => setTareasGlobales([nuevaTarea, ...tareasGlobales]);
-  const eliminarTarea = (id: string) => setTareasGlobales(tareasGlobales.filter(t => t.id !== id));
-  const toggleCompletarTarea = (id: string) => {
-    setTareasGlobales(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada } : t));
-  };
-  const actualizarTarea = (id: string, datosActualizados: any) => {
-    setTareasGlobales(prev => prev.map(t => t.id === id ? { ...t, ...datosActualizados } : t));
-  };
+  const agregarTarea = (nuevaTarea: any) => setTareasGlobales(prev => [nuevaTarea, ...prev]);
+  const eliminarTarea = (id: string) => setTareasGlobales(prev => prev.filter(t => t.id !== id));
+  const toggleCompletarTarea = (id: string) => setTareasGlobales(prev => prev.map(t => t.id === id ? { ...t, completada: !t.completada } : t));
+  const actualizarTarea = (id: string, datosActualizados: any) => setTareasGlobales(prev => prev.map(t => t.id === id ? { ...t, ...datosActualizados } : t));
 
-  // --- FUNCIONES DE CICLOS Y HORARIO ---
   const crearCiclo = (año: string, semestre: string) => {
     const nuevosCiclos = ciclos.map(c => ({ ...c, activo: false }));
     nuevosCiclos.unshift({ id: Math.random().toString(), año, semestre, activo: true, ramos: [] });
     setCiclos(nuevosCiclos);
   };
-
   const editarCiclo = (id: string, nuevoAño: string, nuevoSemestre: string) => setCiclos(ciclos.map(c => c.id === id ? { ...c, año: nuevoAño, semestre: nuevoSemestre } : c));
   const eliminarCiclo = (id: string) => setCiclos(ciclos.filter(c => c.id !== id));
   const toggleCicloActivo = (id: string) => setCiclos(ciclos.map(c => ({ ...c, activo: c.id === id ? !c.activo : false })));
@@ -132,17 +105,16 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const ramoConCategorias = { ...nuevoRamo, categorias: nuevoRamo.categorias || [] };
     setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: [...c.ramos, ramoConCategorias] } : c));
   };
-
   const actualizarRamo = (cicloId: string, idRamo: string, ramoActualizado: any) => setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.map((r: any) => r.id === idRamo ? ramoActualizado : r) } : c));
   const eliminarRamo = (cicloId: string, idRamo: string) => setCiclos(ciclos.map(c => c.id === cicloId ? { ...c, ramos: c.ramos.filter((r: any) => r.id !== idRamo) } : c));
 
-  const agregarActividadGlobal = (nuevaActividad: any) => setActividadesGlobales([...actividadesGlobales, nuevaActividad]);
+  const agregarActividadGlobal = (nuevaActividad: any) => setActividadesGlobales(prev => [...prev, nuevaActividad]);
 
-  const agregarBloqueHorario = (bloque: any) => setBloquesHorario([...bloquesHorario, bloque]);
-  const eliminarBloqueHorario = (id: string) => setBloquesHorario(bloquesHorario.filter(b => b.id !== id));
-  const limpiarBloquesVisibles = (idsALimpiar: string[]) => setBloquesHorario(bloquesHorario.filter(b => !idsALimpiar.includes(b.id)));
+  const agregarBloqueHorario = (bloque: any) => setBloquesHorario(prev => [...prev, bloque]);
+  const eliminarBloqueHorario = (id: string) => setBloquesHorario(prev => prev.filter(b => b.id !== id));
+  const actualizarBloqueHorario = (id: string, bloqueActualizado: any) => setBloquesHorario(prev => prev.map(b => b.id === id ? bloqueActualizado : b));
+  const limpiarBloquesVisibles = (idsALimpiar: string[]) => setBloquesHorario(prev => prev.filter(b => !idsALimpiar.includes(b.id)));
 
-  // --- LÓGICA DE NOTAS --- //
   const calcularPromedioRamo = (categorias: any[]) => {
     if (!categorias || categorias.length === 0) return 0;
     let notaAcumulada = 0;
@@ -450,7 +422,6 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
   const cicloActivo = ciclos.find(c => c.activo) || null;
   const ramosGlobales = cicloActivo ? cicloActivo.ramos : [];
 
-  // Evitamos que la app se renderice y sobreescriba datos antes de cargar el disco duro
   if (!datosCargados) return null;
 
   return (
@@ -461,7 +432,7 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
       guardarSubcategoria, eliminarSubcategoria, agregarNotaSubcategoria, eliminarNotaSubcategoria, actualizarNotaSubcategoria,
       ramosGlobales, cicloActivo,
       actividadesGlobales, agregarActividadGlobal,
-      bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles,
+      bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, actualizarBloqueHorario, limpiarBloquesVisibles,
       calcularPromedioRamo,
       apuntesGlobales, agregarApunte, eliminarApunte, actualizarApunte,
       eventosGlobales, agregarEvento, eliminarEvento, editarEvento,

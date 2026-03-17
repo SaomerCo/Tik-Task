@@ -22,7 +22,7 @@ export default function HorarioScreen() {
 
   const {
     ramosGlobales, actividadesGlobales, agregarActividadGlobal,
-    cicloActivo, bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, limpiarBloquesVisibles,
+    cicloActivo, bloquesHorario, agregarBloqueHorario, eliminarBloqueHorario, actualizarBloqueHorario, limpiarBloquesVisibles,
     eventosGlobales, agregarEvento
   } = useAppContext();
 
@@ -30,18 +30,17 @@ export default function HorarioScreen() {
   const s = buildStyles(colors, isDark);
   const { setTabIndex } = useTabContext();
 
-  // PARÁMETROS DESDE EVENTOS
   const params = useLocalSearchParams();
   const esModoSeleccion = params.modoSeleccion === 'true';
   const ramoIdTarget = params.ramoId;
 
-  // Estados del Menú Superior
   const [menuTopVisible, setMenuTopVisible] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
 
-  // Estados del Formulario
   const [modalVisible, setModalVisible] = useState(false);
   const [tipoBloque, setTipoBloque] = useState('ramo');
+  
+  const [bloqueEditandoId, setBloqueEditandoId] = useState<string | null>(null);
 
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
   const [ramoSeleccionado, setRamoSeleccionado] = useState<any>(null);
@@ -56,27 +55,24 @@ export default function HorarioScreen() {
   const [showPickerInicio, setShowPickerInicio] = useState(false);
   const [showPickerFin, setShowPickerFin] = useState(false);
 
-  // NUEVO: Formateo de Hora en formato AM/PM
   const formatearHora = (fecha: Date) => {
     let horas = fecha.getHours();
     let minutos = fecha.getMinutes();
     const ampm = horas >= 12 ? 'PM' : 'AM';
     horas = horas % 12;
-    horas = horas ? horas : 12; // el 0 debe ser 12
+    horas = horas ? horas : 12; 
     return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')} ${ampm}`;
   };
 
   const onChangeInicio = (event: any, selectedDate?: Date) => { setShowPickerInicio(false); if (selectedDate) setHoraInicio(selectedDate); };
   const onChangeFin = (event: any, selectedDate?: Date) => { setShowPickerFin(false); if (selectedDate) setHoraFin(selectedDate); };
   
-  // NUEVO: Conversor a minutos inteligente (Soporta 24h antiguo y AM/PM nuevo)
   const convertirAMinutos = (horaStr: string) => { 
     if (!horaStr || !horaStr.includes(':')) return 0; 
     let [hStr, mStr] = horaStr.split(':'); 
     let h = parseInt(hStr); 
-    let m = parseInt(mStr.replace(/[^0-9]/g, '')); // Extrae solo los números
+    let m = parseInt(mStr.replace(/[^0-9]/g, '')); 
     
-    // Ajuste para formato AM/PM
     if (horaStr.toLowerCase().includes('pm') && h !== 12) h += 12;
     if (horaStr.toLowerCase().includes('am') && h === 12) h = 0;
     
@@ -91,9 +87,6 @@ export default function HorarioScreen() {
     return `${minutos}m`;
   };
 
-  // =====================================================================
-  // VISTA: SIN SEMESTRE ACTIVO
-  // =====================================================================
   if (!cicloActivo) {
     return (
       <View style={s.mainContainer}>
@@ -121,10 +114,6 @@ export default function HorarioScreen() {
     );
   }
 
-  // =====================================================================
-  // LÓGICA NORMAL CON SEMESTRE ACTIVO
-  // =====================================================================
-
   const bloquesVisibles = bloquesHorario.filter((b: any) => b.cicloId === cicloActivo.id);
 
   const clasesDelDia = bloquesVisibles
@@ -144,23 +133,71 @@ export default function HorarioScreen() {
     ]);
   };
 
+  // NUEVA FUNCIÓN PARA CONFIRMAR BORRADO INDIVIDUAL
+  const confirmarEliminarBloque = (id: string) => {
+    Alert.alert('Eliminar bloque', '¿Estás seguro de que quieres borrar este bloque del horario?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', style: 'destructive', onPress: () => eliminarBloqueHorario(id) }
+    ]);
+  };
+
   const seleccionarRamo = (ramo: any) => {
     setRamoSeleccionado(ramo); setMostrarDropdown(false);
-    setEtiquetasSeleccionadas(ramo.etiquetas && ramo.etiquetas.length > 0 ? [ramo.etiquetas[0]] : []);
+    if (!bloqueEditandoId) {
+        setEtiquetasSeleccionadas(ramo.etiquetas && ramo.etiquetas.length > 0 ? [ramo.etiquetas[0]] : []);
+    }
   };
   const toggleEtiqueta = (tag: string) => setEtiquetasSeleccionadas(etiquetasSeleccionadas.includes(tag) ? etiquetasSeleccionadas.filter(t => t !== tag) : [...etiquetasSeleccionadas, tag]);
   const cargarActividadGuardada = (act: any) => { setNuevaActividadNombre(act.nombre); setNuevaActividadColor(act.colorHex); };
 
-  const abrirModal = () => {
+  const abrirModalNuevo = () => {
     if (esModoSeleccion) return;
+    setBloqueEditandoId(null);
     setTipoBloque(ramosGlobales.length === 0 ? 'actividad' : 'ramo');
+    setRamoSeleccionado(null);
+    setEtiquetasSeleccionadas([]);
+    setNuevaActividadNombre('');
+    setHoraInicio(new Date(new Date().setHours(8, 30, 0, 0)));
+    setHoraFin(new Date(new Date().setHours(10, 0, 0, 0)));
+    setModalVisible(true);
+  };
+
+  const abrirModalEdicionBloque = (clase: any) => {
+    setBloqueEditandoId(clase.id);
+    
+    if (clase.isActividad) {
+        setTipoBloque('actividad');
+        setNuevaActividadNombre(clase.ramo);
+        setNuevaActividadColor(clase.colorHex);
+        setRamoSeleccionado(null);
+        setEtiquetasSeleccionadas([]);
+    } else {
+        setTipoBloque('ramo');
+        const ramoGlobal = ramosGlobales.find((r: any) => r.id === clase.ramoId);
+        setRamoSeleccionado(ramoGlobal || { nombre: clase.ramo, colorHex: clase.colorHex, etiquetas: clase.etiquetas });
+        setEtiquetasSeleccionadas(clase.etiquetas || []);
+        setNuevaActividadNombre('');
+    }
+
+    const parseHoraStr = (horaStr: string) => {
+        const min = convertirAMinutos(horaStr);
+        const d = new Date();
+        d.setHours(Math.floor(min / 60), min % 60, 0, 0);
+        return d;
+    };
+    
+    setHoraInicio(parseHoraStr(clase.horaInicio));
+    setHoraFin(parseHoraStr(clase.horaFin));
+    
     setModalVisible(true);
   };
 
   const ejecutarGuardado = () => {
     let nuevaClase: any = {
-      id: Math.random().toString(), dia: diaActivo,
-      horaInicio: formatearHora(horaInicio), horaFin: formatearHora(horaFin),
+      id: bloqueEditandoId ? bloqueEditandoId : Math.random().toString(), 
+      dia: diaActivo,
+      horaInicio: formatearHora(horaInicio), 
+      horaFin: formatearHora(horaFin),
     };
 
     if (tipoBloque === 'ramo') {
@@ -185,8 +222,14 @@ export default function HorarioScreen() {
       }
     }
 
-    agregarBloqueHorario(nuevaClase);
+    if (bloqueEditandoId) {
+        actualizarBloqueHorario(bloqueEditandoId, nuevaClase);
+    } else {
+        agregarBloqueHorario(nuevaClase);
+    }
+    
     setModalVisible(false);
+    setBloqueEditandoId(null);
     setRamoSeleccionado(null);
     setNuevaActividadNombre('');
   };
@@ -198,16 +241,18 @@ export default function HorarioScreen() {
     const finMin = horaFin.getHours() * 60 + horaFin.getMinutes();
     if (inicioMin >= finMin) return Alert.alert('Error', 'La hora de término debe ser posterior a la de inicio.');
 
-    const hayChoque = bloquesVisibles.filter((c: any) => c.dia === diaActivo).some((claseExistente: any) => {
-      const inicioExistente = convertirAMinutos(claseExistente.horaInicio);
-      const finExistente = convertirAMinutos(claseExistente.horaFin);
-      return (inicioMin < finExistente && inicioExistente < finMin);
-    });
+    const hayChoque = bloquesVisibles
+        .filter((c: any) => c.dia === diaActivo && c.id !== bloqueEditandoId)
+        .some((claseExistente: any) => {
+            const inicioExistente = convertirAMinutos(claseExistente.horaInicio);
+            const finExistente = convertirAMinutos(claseExistente.horaFin);
+            return (inicioMin < finExistente && inicioExistente < finMin);
+        });
 
     if (hayChoque) {
-      Alert.alert('Choque ⚠️', 'Este bloque se superpone con otro en este semestre. ¿Crear igual?', [
+      Alert.alert('Choque ⚠️', 'Este bloque se superpone con otro en este semestre. ¿Guardar igual?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Crear', onPress: ejecutarGuardado, style: 'destructive' }
+        { text: 'Guardar', onPress: ejecutarGuardado, style: 'destructive' }
       ]);
     } else { ejecutarGuardado(); }
   };
@@ -269,8 +314,8 @@ export default function HorarioScreen() {
 
         {eventosGlobales
           .filter((e: any) => e.temporal)
-          .map((eventoTemporal: any) => (
-            <View key={`temp-${eventoTemporal.id}`} style={[s.tarjeta, { borderLeftColor: colors.danger, backgroundColor: isDark ? colors.danger + '10' : '#fef2f2' }]}>
+          .map((eventoTemporal: any, index: number) => (
+            <View key={`temp-${eventoTemporal.id}-${index}`} style={[s.tarjeta, { borderLeftColor: colors.danger, backgroundColor: isDark ? colors.danger + '10' : '#fef2f2' }]}>
               <View style={s.horaContainer}>
                 <Text style={[s.horaTexto, { color: colors.danger }]}>{eventoTemporal.hora.split(' - ')[0]}</Text>
                 <Text style={[s.horaFin, { color: colors.danger }]}>{eventoTemporal.hora.split(' - ')[1]}</Text>
@@ -302,7 +347,7 @@ export default function HorarioScreen() {
             const opacidadBaja = esModoSeleccion && !isTargetRamo;
 
             return (
-              <React.Fragment key={clase.id}>
+              <React.Fragment key={`${clase.id}-${index}`}>
                 <TouchableOpacity
                   activeOpacity={esModoSeleccion ? 0.7 : 1}
                   onPress={() => manejarToqueBloque(clase)}
@@ -320,10 +365,17 @@ export default function HorarioScreen() {
                     <View style={s.infoContainer}>
                       <View style={s.tituloFila}>
                         <Text style={[s.materiaTexto, opacidadBaja && { color: colors.textSecondary }]} numberOfLines={1}>{clase.ramo}</Text>
+                        
                         {modoEdicion && (
-                          <TouchableOpacity style={[s.btnBorrarClase, { backgroundColor: isDark ? colors.danger + '20' : '#fee2e2' }]} onPress={() => eliminarBloqueHorario(clase.id)}>
-                            <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'row', gap: 8 }}>
+                              <TouchableOpacity style={[s.btnBorrarClase, { backgroundColor: isDark ? colors.primary + '20' : '#e0e7ff' }]} onPress={() => abrirModalEdicionBloque(clase)}>
+                                <Ionicons name="pencil" size={18} color={colors.primary} />
+                              </TouchableOpacity>
+                              {/* LLAMADA A LA NUEVA FUNCIÓN DE CONFIRMACIÓN DE BORRADO */}
+                              <TouchableOpacity style={[s.btnBorrarClase, { backgroundColor: isDark ? colors.danger + '20' : '#fee2e2' }]} onPress={() => confirmarEliminarBloque(clase.id)}>
+                                <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                              </TouchableOpacity>
+                          </View>
                         )}
                       </View>
 
@@ -360,12 +412,10 @@ export default function HorarioScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB DERECHO: Añadir bloque */}
       {!modoEdicion && !esModoSeleccion && (
-        <TouchableOpacity style={[s.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={abrirModal}><Ionicons name="add" size={30} color="white" /></TouchableOpacity>
+        <TouchableOpacity style={[s.fab, { backgroundColor: colors.primary, shadowColor: colors.primary }]} onPress={abrirModalNuevo}><Ionicons name="add" size={30} color="white" /></TouchableOpacity>
       )}
 
-      {/* FAB IZQUIERDO: Editar / Hecho */}
       {!esModoSeleccion && (
         modoEdicion ? (
           <TouchableOpacity
@@ -402,6 +452,8 @@ export default function HorarioScreen() {
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
+            
+            <Text style={s.modalTitulo}>{bloqueEditandoId ? 'Editar Bloque' : 'Nuevo Bloque'}</Text>
 
             <View style={s.tabsFormulario}>
               <TouchableOpacity style={[s.tabForm, tipoBloque === 'ramo' && s.tabFormActivo]} onPress={() => setTipoBloque('ramo')}>
@@ -495,13 +547,14 @@ export default function HorarioScreen() {
               </View>
             </View>
 
-            {/* SE AÑADIÓ is24Hour={false} AQUÍ PARA EL FORMATO AM/PM */}
             {showPickerInicio && <DateTimePicker value={horaInicio} mode="time" is24Hour={false} display="default" onChange={onChangeInicio} />}
             {showPickerFin && <DateTimePicker value={horaFin} mode="time" is24Hour={false} display="default" onChange={onChangeFin} />}
 
             <View style={s.modalBotones}>
               <TouchableOpacity style={s.btnCancelar} onPress={() => setModalVisible(false)}><Text style={s.btnCancelarTexto}>Cancelar</Text></TouchableOpacity>
-              <TouchableOpacity style={[s.btnGuardar, (tipoBloque === 'ramo' && !ramoSeleccionado) && { backgroundColor: isDark ? colors.surfaceSubtle : '#cbd5e1' }]} onPress={guardarClase} disabled={tipoBloque === 'ramo' && !ramoSeleccionado}><Text style={s.btnGuardarTexto}>Guardar</Text></TouchableOpacity>
+              <TouchableOpacity style={[s.btnGuardar, (tipoBloque === 'ramo' && !ramoSeleccionado) && { backgroundColor: isDark ? colors.surfaceSubtle : '#cbd5e1' }]} onPress={guardarClase} disabled={tipoBloque === 'ramo' && !ramoSeleccionado}>
+                <Text style={s.btnGuardarTexto}>{bloqueEditandoId ? 'Actualizar' : 'Guardar'}</Text>
+              </TouchableOpacity>
             </View>
 
           </View>
@@ -512,9 +565,6 @@ export default function HorarioScreen() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Estilos Dinámicos
-// ─────────────────────────────────────────────────────────────────────────────
 function buildStyles(colors: any, isDark: boolean) {
   return StyleSheet.create({
     mainContainer: { flex: 1, backgroundColor: colors.background },
@@ -539,7 +589,6 @@ function buildStyles(colors: any, isDark: boolean) {
 
     tarjeta: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 15, marginBottom: 10, borderLeftWidth: 6, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 8, elevation: isDark ? 0 : 3, borderWidth: 1, borderColor: colors.border },
     
-    // MODIFICADO: Contenedor más ancho y fuentes ajustadas para el AM/PM
     horaContainer: { width: 85, borderRightWidth: 1, borderRightColor: colors.border, justifyContent: 'center', alignItems: 'center', paddingRight: 10, marginRight: 15 },
     horaTexto: { fontSize: 15, fontWeight: 'bold', color: colors.text, textAlign: 'center' },
     horaFin: { fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
@@ -578,7 +627,7 @@ function buildStyles(colors: any, isDark: boolean) {
     modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
     modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, maxHeight: '90%' },
 
-    tabsFormulario: { flexDirection: 'row', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 12, padding: 4, marginBottom: 10 },
+    tabsFormulario: { flexDirection: 'row', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 12, padding: 4, marginBottom: 15 },
     tabForm: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 10 },
     tabFormActivo: { backgroundColor: colors.surface, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.05, shadowRadius: 4, elevation: isDark ? 0 : 2 },
     tabFormTexto: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
