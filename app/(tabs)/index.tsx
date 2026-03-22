@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Bienvenida from '../../components/Bienvenida';
@@ -19,6 +19,15 @@ export default function Index() {
   const [tiempoRestante, setTiempoRestante] = useState<string | null>(null);
   const [eventoProximo, setEventoProximo] = useState<any>(null);
   const [nombreUsuario, setNombreUsuario] = useState('Estudiante');
+
+  // 🔥 EL TRUCO MÁGICO: Forzamos a la pantalla a "despertar" y recalcular 
+  // los datos frescos cada vez que el usuario entra a esta pestaña.
+  const [, setForzarActualizacion] = useState(0);
+  useFocusEffect(
+    useCallback(() => {
+      setForzarActualizacion(prev => prev + 1);
+    }, [])
+  );
 
   const opcionesFecha: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
   const fechaHoyStr = new Date().toLocaleDateString('es-ES', opcionesFecha).toUpperCase();
@@ -172,14 +181,11 @@ export default function Index() {
           </View>
 
           <View style={styles.row}>
-            {/* ──────────────────────────────────────────────────────── */}
-            {/* TARJETA DE TAREAS (NUEVO ESTADO VACÍO CTA) */}
-            {/* ──────────────────────────────────────────────────────── */}
+            {/* TARJETA DE OBJETIVOS */}
             <TouchableOpacity
               style={[
-                styles.gridItem, 
+                styles.gridItem,
                 dynamicStyles.gridItem,
-                // Si está vacío, le damos un borde y fondo punteado o sutil para que resalte como "acción pendiente"
                 estadoTareas === 'vacio' && { backgroundColor: isDark ? colors.background : '#f8fafc', borderColor: colors.border, borderStyle: 'dashed' }
               ]}
               activeOpacity={0.8}
@@ -205,16 +211,16 @@ export default function Index() {
               <View style={styles.textWrapper}>
                 {estadoTareas === 'vacio' ? (
                   <>
-                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Sin tareas aún</Text>
+                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Sin objetivos aún</Text>
                     <View style={[styles.ctaButton, { backgroundColor: colors.success }]}>
-                      <Text style={styles.ctaButtonText}>Crear una ahora</Text>
+                      <Text style={styles.ctaButtonText}>Crear uno ahora</Text>
                     </View>
                   </>
                 ) : (
                   <>
-                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Tareas</Text>
+                    <Text style={[styles.gridTitle, dynamicStyles.gridTitle]}>Objetivos diarios</Text>
                     {estadoTareas === 'pendientes' && <Text style={[styles.gridSubtitle, { color: colors.warning, fontWeight: 'bold' }]}>{tareasPendientes} pendientes</Text>}
-                    {estadoTareas === 'completadas' && <Text style={[styles.gridSubtitle, { color: colors.success, fontWeight: 'bold' }]}>¡Todo listo!</Text>}
+                    {estadoTareas === 'completadas' && <Text style={[styles.gridSubtitle, { color: colors.success, fontWeight: 'bold' }]}>¡Todos cumplidos!</Text>}
                   </>
                 )}
               </View>
@@ -392,7 +398,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // NUEVO ESTILO PARA EL BOTÓN CTA (Call To Action) DE TAREAS VACÍAS
   ctaButton: {
     marginTop: 8,
     paddingHorizontal: 12,

@@ -153,7 +153,7 @@ export default function EnfoqueScreen() {
 
   // 3. ELIMINAR INSTANTÁNEO (OPTIMISTIC UI)
   const confirmarEliminarTarea = (id: string) => {
-    Alert.alert('Eliminar Tarea', '¿Estás seguro de que quieres borrar este hábito/tarea?', [
+    Alert.alert('Eliminar Objetivo', '¿Estás seguro de que quieres borrar este hábito/objetivo diario?', [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: () => {
             // Cambio visual Inmediato
@@ -306,7 +306,7 @@ export default function EnfoqueScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={[s.tabBoton, tabActiva === 'tareas' && s.tabBotonActivo]} onPress={() => setTabActiva('tareas')}>
             <Ionicons name="checkbox-outline" size={18} color={tabActiva === 'tareas' ? colors.success : colors.textSecondary} />
-            <Text style={[s.tabTexto, tabActiva === 'tareas' && { color: colors.success }]}>Tareas</Text>
+            <Text style={[s.tabTexto, tabActiva === 'tareas' && { color: colors.success }]}>Objetivos Diarios</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -320,7 +320,7 @@ export default function EnfoqueScreen() {
             {tareasLocales.length === 0 ? (
               <View style={s.estadoVacio}>
                 <Ionicons name="list-outline" size={60} color={colors.border} />
-                <Text style={s.textoVacio}>No hay tareas para hoy</Text>
+                <Text style={s.textoVacio}>No hay objetivos diarios para hoy</Text>
                 <Text style={s.subtextoVacio}>Añade hábitos como "Tomar 2L de agua" o "Leer 20 pags".</Text>
               </View>
             ) : (
@@ -564,7 +564,7 @@ export default function EnfoqueScreen() {
         <View style={s.modalOverlay}>
           <View style={s.modalContent}>
             <View style={s.modalHeader}>
-              <Text style={s.modalTitulo}>{tareaAEditarId ? 'Editar Tarea' : 'Nueva Tarea'}</Text>
+              <Text style={s.modalTitulo}>{tareaAEditarId ? 'Editar Objetivo Diario' : 'Nuevo Objetivo Diario'}</Text>
               <TouchableOpacity onPress={() => setModalTareaVisible(false)}>
                 <Ionicons name="close" size={26} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -581,7 +581,7 @@ export default function EnfoqueScreen() {
             />
 
             <TouchableOpacity style={s.btnGuardarTareaFull} onPress={guardarTarea}>
-              <Text style={s.btnGuardarTextoFull}>{tareaAEditarId ? 'Actualizar Tarea' : 'Añadir a mi día'}</Text>
+              <Text style={s.btnGuardarTextoFull}>{tareaAEditarId ? 'Actualizar Objetivo Diario' : 'Añadir a mi día'}</Text>
             </TouchableOpacity>
           </View>
         </View>
