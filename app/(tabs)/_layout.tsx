@@ -5,14 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabView, SceneMap } from 'react-native-tab-view';
 
 // Importamos las pantallas directamente
-import RamosScreen from './ramos';
 import ApuntesScreen from './apuntes';
-import HorarioScreen from './horario';
-import IndexScreen from './index';
-import EventosScreen from './eventos';
-import EnfoqueScreen from './enfoque';
-import RendimientoScreen from './rendimiento';
-import ConfiguracionScreen from './configuracion';
 
 // Contexto de tabs
 import { TabProvider, useTabContext } from '../../context/TabContext';
@@ -21,35 +14,15 @@ import { TabProvider, useTabContext } from '../../context/TabContext';
 import { useTheme } from '../../context/ThemeContext';
 
 const ROUTES = [
-  { key: 'ramos',          title: 'Ramos'         },
   { key: 'apuntes',        title: 'Apuntes'       },
-  { key: 'horario',        title: 'Horario'       },
-  { key: 'index',          title: 'Inicio'        },
-  { key: 'eventos',        title: 'Eventos'       },
-  { key: 'enfoque',        title: 'Estudio'       },
-  { key: 'rendimiento',    title: 'Progreso'      },
-  { key: 'configuracion',  title: 'Ajustes'       },
 ];
 
 const ROUTE_ICONS: Record<string, (color: string) => React.ReactElement> = {
-  ramos:       (c) => <Ionicons name="school"        size={24} color={c} />,
   apuntes:     (c) => <Ionicons name="document-text" size={24} color={c} />,
-  horario:     (c) => <Ionicons name="calendar"      size={24} color={c} />,
-  index:       (c) => <Ionicons name="home"           size={26} color={c} />,
-  eventos:     (c) => <Ionicons name="notifications"  size={24} color={c} />,
-  enfoque:     (c) => <MaterialCommunityIcons name="brain" size={26} color={c} />,
-  rendimiento: (c) => <Ionicons name="stats-chart"   size={24} color={c} />,
 };
 
 const renderScene = SceneMap({
-  ramos:          () => <RamosScreen />,
   apuntes:        () => <ApuntesScreen />,
-  horario:        () => <HorarioScreen />,
-  index:          () => <IndexScreen />,
-  eventos:        () => <EventosScreen />,
-  enfoque:        () => <EnfoqueScreen />,
-  rendimiento:    () => <RendimientoScreen />,
-  configuracion:  () => <ConfiguracionScreen />,
 });
 
 function TabLayoutInner() {
