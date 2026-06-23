@@ -318,33 +318,13 @@ export default function ApuntesScreen() {
 
             <Encabezado
                 label="BIBLIOTECA"
-                titulo="Apuntes"
+                titulo="tik-task"
                 subtitulo="Ideas y resúmenes"
                 icono="document-text"
                 colorActivo={colors.danger}
             />
 
-            <View style={s.barraSuperiorContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtrosContainer}>
-                    <TouchableOpacity style={[s.filtroPildora, filtroActual === 'todos' && s.filtroActivo]} onPress={() => setFiltroActual('todos')}>
-                        <Text style={[s.filtroTexto, filtroActual === 'todos' && s.filtroTextoActivo]}>Todas</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[s.filtroPildora, filtroActual === 'general' && s.filtroActivo]} onPress={() => setFiltroActual('general')}>
-                        <Text style={[s.filtroTexto, filtroActual === 'general' && s.filtroTextoActivo]}>Generales</Text>
-                    </TouchableOpacity>
-                    {ramosGlobales.map((ramo: any) => (
-                        <TouchableOpacity key={ramo.id} style={[s.filtroPildora, filtroActual === ramo.id && { backgroundColor: ramo.colorHex, borderColor: ramo.colorHex }]} onPress={() => setFiltroActual(ramo.id)}>
-                            <Text style={[s.filtroTexto, filtroActual === ramo.id && { color: 'white' }]}>{ramo.nombre}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
 
-                {/* BOTÓN DE IMPORTAR COMENTADO TEMPORALMENTE 
-                <TouchableOpacity style={[s.btnImportar, { backgroundColor: isDark ? colors.surfaceElevated : '#f1f5f9' }]} onPress={importarApunte}>
-                    <Ionicons name="download-outline" size={22} color={colors.primary} />
-                </TouchableOpacity>
-                */}
-            </View>
 
             <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
                 {apuntesFiltrados.length === 0 ? (
@@ -571,7 +551,7 @@ function buildStyles(colors: any, isDark: boolean) {
         textoVacio: { fontSize: 20, fontWeight: 'bold', color: colors.textSecondary },
         subtextoVacio: { fontSize: 14, color: colors.textTertiary, marginTop: 5, textAlign: 'center', paddingHorizontal: 40 },
 
-        fab: { position: 'absolute', bottom: 20, right: 20, backgroundColor: colors.danger, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: colors.danger, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
+        fab: { position: 'absolute', bottom: 60, alignSelf: 'center', backgroundColor: colors.danger, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', shadowColor: colors.danger, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 8, elevation: 5 },
 
         modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
         modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, height: '85%' },
