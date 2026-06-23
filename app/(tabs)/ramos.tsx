@@ -668,7 +668,7 @@ export default function RamosScreen() {
                     <View style={[s.tipCard, { backgroundColor: isDark ? colors.surfaceSubtle : '#f8fafc', borderColor: colors.border }]}>
                       <Ionicons name="bulb-outline" size={20} color={colors.textTertiary} style={{ marginRight: 10 }} />
                       <Text style={s.tipText}>
-                        <Text style={{ fontWeight: 'bold' }}>Pro tip:</Text> Si dejas el campo "%" vacío, Estudyl calculará un promedio equitativo automáticamente.
+                        <Text style={{ fontWeight: 'bold' }}>Pro tip:</Text> Si dejas el campo "%" vacío, tik-task calculará un promedio equitativo automáticamente.
                       </Text>
                     </View>
 

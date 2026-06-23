@@ -37,7 +37,7 @@ export default function ApuntesScreen() {
     const [duracionGrabacion, setDuracionGrabacion] = useState(0);
 
     // =====================================================================
-    // LÓGICA DE EXPORTAR E IMPORTAR APUNTES (.estudyl)
+    // LÓGICA DE EXPORTAR E IMPORTAR APUNTES (.tik-task)
     // --- COMENTADO TEMPORALMENTE A PETICIÓN DEL USUARIO ---
     // =====================================================================
     /*
@@ -55,7 +55,7 @@ export default function ApuntesScreen() {
             }
 
             const paqueteExportacion = {
-                tipo: 'ESTUDYL_APUNTE',
+                tipo: 'TIKTASK_APUNTE',
                 version: '1.0',
                 datos: {
                     titulo: apunte.titulo,
@@ -67,7 +67,7 @@ export default function ApuntesScreen() {
             };
 
             const nombreArchivo = (apunte.titulo || 'Apunte').replace(/[^a-zA-Z0-9]/g, '_');
-            const fileUri = `${FileSystem.cacheDirectory}${nombreArchivo}.estudyl`;
+            const fileUri = `${FileSystem.cacheDirectory}${nombreArchivo}.tik-task`;
             await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(paqueteExportacion));
 
             const sePuedeCompartir = await Sharing.isAvailableAsync();
@@ -99,8 +99,8 @@ export default function ApuntesScreen() {
             const contenidoString = await FileSystem.readAsStringAsync(fileUri);
             const paquete = JSON.parse(contenidoString);
 
-            if (paquete.tipo !== 'ESTUDYL_APUNTE' || !paquete.datos) {
-                Alert.alert('Archivo Inválido', 'Este archivo no es un apunte compatible con Estudyl.');
+            if (paquete.tipo !== 'TIKTASK_APUNTE' || !paquete.datos) {
+                Alert.alert('Archivo Inválido', 'Este archivo no es un apunte compatible con tik-task.');
                 return;
             }
 
@@ -133,7 +133,7 @@ export default function ApuntesScreen() {
 
         } catch (error) {
             console.error(error);
-            Alert.alert('Error al Importar', 'Asegúrate de haber seleccionado un archivo .estudyl válido.');
+            Alert.alert('Error al Importar', 'Asegúrate de haber seleccionado un archivo .tik-task válido.');
         }
     };
     */

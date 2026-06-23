@@ -16,7 +16,7 @@ interface ThemeContextValue {
   isThemeLoading: boolean;
 }
 
-const STORAGE_KEY = '@estudyl_theme_preference';
+const STORAGE_KEY = '@tik-task_theme_preference';
 
 const ThemeContext = createContext<ThemeContextValue>({
   themeMode: 'system',

@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Estudyl",
-    "slug": "Estudyl",
+    "name": "tik-task",
+    "slug": "tik-task",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "estudyl",
+    "scheme": "tik-task",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kratos3491.Estudyl"
+      "bundleIdentifier": "com.kratos3491.tiktask"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.kratos3491.Estudyl"
+      "package": "com.kratos3491.tiktask"
     },
     "web": {
       "output": "static",

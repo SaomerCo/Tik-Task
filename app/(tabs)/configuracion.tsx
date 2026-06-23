@@ -167,7 +167,7 @@ export default function Configuracion() {
           <View style={s.infoRow}>
             <Ionicons name="school-outline" size={20} color={colors.textSecondary} />
             <Text style={s.infoText}>App</Text>
-            <Text style={s.infoValue}>Estudyl</Text>
+            <Text style={s.infoValue}>tik-task</Text>
           </View>
         </View>
 
