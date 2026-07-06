@@ -557,6 +557,27 @@ function buildStyles(colors: any, isDark: boolean) {
     return StyleSheet.create({
         mainContainer: { flex: 1, backgroundColor: colors.background },
 
+        busquedaContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginHorizontal: 15,
+            marginTop: 15,
+            marginBottom: 5,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            borderRadius: 14,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+        },
+
+        inputBusqueda: {
+            flex: 1,
+            marginLeft: 8,
+            fontSize: 15,
+            color: colors.text,
+        },
+
         barraSuperiorContainer: { flexDirection: 'row', alignItems: 'center', paddingRight: 20, paddingBottom: 10 },
         filtrosContainer: { paddingHorizontal: 20, paddingTop: 15, gap: 10 },
         filtroPildora: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: isDark ? colors.background : colors.surface, borderWidth: 1, borderColor: colors.border },
