@@ -169,11 +169,34 @@ export default function ApuntesScreen() {
         }
     }, [params.ramoIdFiltro, ramosGlobales]);
 
-    const apuntesFiltrados = apuntesGlobales.filter((apunte: any) => {
-        if (filtroActual === 'todos') return true;
-        return apunte.ramoId === filtroActual;
-    });
+const normalizarTexto = (texto: string) => {
+    return texto
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+};
 
+const apuntesFiltrados = apuntesGlobales.filter((apunte: any) => {
+    const cumpleFiltroRamo =
+        filtroActual === 'todos' || apunte.ramoId === filtroActual;
+
+    const busqueda = normalizarTexto(textoBusqueda.trim());
+
+    if (!busqueda) return cumpleFiltroRamo;
+
+    const infoRamo = obtenerInfoRamo(apunte.ramoId);
+
+    const titulo = normalizarTexto(apunte.titulo || '');
+    const contenido = normalizarTexto(apunte.contenido || '');
+    const ramo = normalizarTexto(infoRamo.nombre || '');
+
+    const cumpleBusqueda =
+        titulo.includes(busqueda) ||
+        contenido.includes(busqueda) ||
+        ramo.includes(busqueda);
+
+    return cumpleFiltroRamo && cumpleBusqueda;
+});
     const abrirModalNuevo = () => {
         setNotaEditandoId(null);
         setTituloNota('');
