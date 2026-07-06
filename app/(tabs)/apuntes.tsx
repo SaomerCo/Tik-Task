@@ -21,6 +21,7 @@ export default function ApuntesScreen() {
     const { ramosGlobales, apuntesGlobales, agregarApunte, actualizarApunte, eliminarApunte } = useAppContext();
 
     const [filtroActual, setFiltroActual] = useState<string>('todos');
+    const [textoBusqueda, setTextoBusqueda] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [mostrarDropdown, setMostrarDropdown] = useState(false);
 
