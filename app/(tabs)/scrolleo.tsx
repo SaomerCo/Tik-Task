@@ -1,19 +1,19 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Audio } from 'expo-av';
-import { useEffect, useState } from 'react';
+import { Ionicons } from "@expo/vector-icons";
+import { Audio } from "expo-av";
+import { useEffect, useState } from "react";
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import Encabezado from '../../components/Encabezado';
-import { useAppContext } from '../../context/AppContext';
-import { useTheme } from '../../context/ThemeContext';
+import Encabezado from "../../components/Encabezado";
+import { useAppContext } from "../../context/AppContext";
+import { useTheme } from "../../context/ThemeContext";
 
 export default function ScrolleoScreen() {
   const { colors, isDark } = useTheme();
@@ -23,6 +23,7 @@ export default function ScrolleoScreen() {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentAudioId, setCurrentAudioId] = useState<string | null>(null);
+  const [containerHeight, setContainerHeight] = useState<number>(0);
 
   // Limpia el audio cuando se desmonta el componente
   useEffect(() => {
@@ -34,12 +35,12 @@ export default function ScrolleoScreen() {
   }, [sound]);
 
   const obtenerInfoRamo = (rId: string) => {
-    if (rId === 'general')
-      return { nombre: 'General', color: colors.textSecondary };
+    if (rId === "general")
+      return { nombre: "General", color: colors.textSecondary };
     const ramo = ramosGlobales.find((r: any) => r.id === rId);
     return ramo
       ? { nombre: ramo.nombre, color: ramo.colorHex }
-      : { nombre: 'Desconocido', color: colors.textSecondary };
+      : { nombre: "Desconocido", color: colors.textSecondary };
   };
 
   const reproducirAudio = async (apunte: any) => {
@@ -68,8 +69,8 @@ export default function ScrolleoScreen() {
       setIsPlaying(true);
       await newSound.playAsync();
     } catch (error) {
-      console.error('Error al reproducir audio', error);
-      Alert.alert('Error', 'No se pudo reproducir el audio');
+      console.error("Error al reproducir audio", error);
+      Alert.alert("Error", "No se pudo reproducir el audio");
     }
   };
 
@@ -119,9 +120,12 @@ export default function ScrolleoScreen() {
       />
 
       <ScrollView
-        vertical
-        showsVerticalScrollIndicator={true}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
         style={s.scrollContainer}
+        onLayout={(e) => {
+          setContainerHeight(e.nativeEvent.layout.height);
+        }}
       >
         {apuntesGlobales.map((apunte: any) => {
           const infoRamo = obtenerInfoRamo(apunte.ramoId);
@@ -129,104 +133,112 @@ export default function ScrolleoScreen() {
           const tieneAudio = !!apunte.audio;
 
           return (
-            <View key={apunte.id} style={s.tarjetaContenedor}>
-              {/* Header de la tarjeta */}
-              <View style={s.tarjetaHeader}>
-                <View
-                  style={[
-                    s.badgeRamo,
-                    {
-                      backgroundColor: isDark
-                        ? infoRamo.color + '30'
-                        : infoRamo.color + '15',
-                    },
-                  ]}
-                >
-                  <Text
+            <View
+              key={apunte.id}
+              style={{
+                height: containerHeight || "100%",
+                justifyContent: "center",
+                paddingVertical: 12,
+                paddingHorizontal: 16,
+                backgroundColor: "black",
+              }}
+            >
+              <View style={[s.tarjetaContenedor, { marginBottom: 0 }]}>
+                {/* Header de la tarjeta */}
+                <View style={s.tarjetaHeader}>
+                  <View
                     style={[
-                      s.badgeRamoTexto,
+                      s.badgeRamo,
                       {
-                        color: isDark ? 'white' : infoRamo.color,
+                        backgroundColor: isDark
+                          ? infoRamo.color + "30"
+                          : infoRamo.color + "15",
                       },
                     ]}
-                    numberOfLines={1}
                   >
-                    {infoRamo.nombre}
-                  </Text>
-                </View>
-                <Text style={s.fechaTexto}>{apunte.fecha}</Text>
-              </View>
-
-              {/* Título */}
-              <Text style={s.titulo} numberOfLines={2}>
-                {apunte.titulo}
-              </Text>
-
-              {/* Contenido */}
-              {apunte.contenido ? (
-                <Text style={s.contenido} numberOfLines={3}>
-                  {apunte.contenido}
-                </Text>
-              ) : (
-                <Text style={s.textoPlaceholder}>
-                  Esta nota no tiene contenido de texto
-                </Text>
-              )}
-
-              {/* Imágenes */}
-              {tieneFotos && (
-                <View style={s.imagenContainer}>
-                  <Image
-                    source={{ uri: apunte.imagenes[0] }}
-                    style={s.imagen}
-                  />
-                  {apunte.imagenes.length > 1 && (
-                    <View style={s.imagenContador}>
-                      <Text style={s.imagenContadorTexto}>
-                        +{apunte.imagenes.length - 1}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {/* Reproductor de audio */}
-              {tieneAudio && (
-                <View style={s.audioContainer}>
-                  <TouchableOpacity
-                    style={s.playButton}
-                    onPress={
-                      isPlaying && currentAudioId === apunte.id
-                        ? pausarAudio
-                        : () => reproducirAudio(apunte)
-                    }
-                  >
-                    <Ionicons
-                      name={
-                        isPlaying && currentAudioId === apunte.id
-                          ? 'pause'
-                          : 'play'
-                      }
-                      size={20}
-                      color="white"
-                    />
-                  </TouchableOpacity>
-                  <View style={s.audioInfo}>
-                    <Ionicons
-                      name="mic-circle"
-                      size={16}
-                      color={colors.primary}
-                    />
-                    <Text style={s.audioTexto}>Nota de voz</Text>
+                    <Text
+                      style={[
+                        s.badgeRamoTexto,
+                        {
+                          color: isDark ? "white" : infoRamo.color,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {infoRamo.nombre}
+                    </Text>
                   </View>
+                  <Text style={s.fechaTexto}>{apunte.fecha}</Text>
                 </View>
-              )}
+
+                {/* Título */}
+                <Text style={s.titulo} numberOfLines={2}>
+                  {apunte.titulo}
+                </Text>
+
+                {/* Contenido */}
+                {apunte.contenido ? (
+                  <Text style={s.contenido} numberOfLines={3}>
+                    {apunte.contenido}
+                  </Text>
+                ) : (
+                  <Text style={s.textoPlaceholder}>
+                    Esta nota no tiene contenido de texto
+                  </Text>
+                )}
+
+                {/* Imágenes */}
+                {tieneFotos && (
+                  <View style={s.imagenContainer}>
+                    <Image
+                      source={{ uri: apunte.imagenes[0] }}
+                      style={s.imagen}
+                    />
+                    {apunte.imagenes.length > 1 && (
+                      <View style={s.imagenContador}>
+                        <Text style={s.imagenContadorTexto}>
+                          +{apunte.imagenes.length - 1}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                {/* Reproductor de audio */}
+                {tieneAudio && (
+                  <View style={s.audioContainer}>
+                    <TouchableOpacity
+                      style={s.playButton}
+                      onPress={
+                        isPlaying && currentAudioId === apunte.id
+                          ? pausarAudio
+                          : () => reproducirAudio(apunte)
+                      }
+                    >
+                      <Ionicons
+                        name={
+                          isPlaying && currentAudioId === apunte.id
+                            ? "pause"
+                            : "play"
+                        }
+                        size={20}
+                        color="white"
+                      />
+                    </TouchableOpacity>
+                    <View style={s.audioInfo}>
+                      <Ionicons
+                        name="mic-circle"
+                        size={16}
+                        color={colors.primary}
+                      />
+                      <Text style={s.audioTexto}>Nota de voz</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
           );
         })}
-
-        {/* Espacio al final */}
-        <View style={{ height: 20 }} />
       </ScrollView>
 
       {/* Indicador de cantidad de apuntes */}
@@ -251,8 +263,7 @@ function buildStyles(colors: any, isDark: boolean) {
 
     scrollContainer: {
       flex: 1,
-      paddingHorizontal: 16,
-      paddingTop: 16,
+      backgroundColor: "black",
     },
 
     tarjetaContenedor: {
@@ -262,7 +273,7 @@ function buildStyles(colors: any, isDark: boolean) {
       marginBottom: 16,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: '#000',
+      shadowColor: "#000",
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.08,
       shadowRadius: 8,
@@ -270,9 +281,9 @@ function buildStyles(colors: any, isDark: boolean) {
     },
 
     tarjetaHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
       marginBottom: 12,
     },
 
@@ -280,24 +291,24 @@ function buildStyles(colors: any, isDark: boolean) {
       paddingHorizontal: 10,
       paddingVertical: 5,
       borderRadius: 6,
-      maxWidth: '60%',
+      maxWidth: "60%",
     },
 
     badgeRamoTexto: {
       fontSize: 11,
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
+      fontWeight: "bold",
+      textTransform: "uppercase",
     },
 
     fechaTexto: {
       fontSize: 11,
       color: colors.textTertiary,
-      fontWeight: '500',
+      fontWeight: "500",
     },
 
     titulo: {
       fontSize: 18,
-      fontWeight: 'bold',
+      fontWeight: "bold",
       color: colors.text,
       marginBottom: 10,
     },
@@ -312,43 +323,44 @@ function buildStyles(colors: any, isDark: boolean) {
     textoPlaceholder: {
       fontSize: 13,
       color: colors.textTertiary,
-      fontStyle: 'italic',
+      fontStyle: "italic",
       marginBottom: 12,
     },
 
     imagenContainer: {
       marginBottom: 12,
       borderRadius: 10,
-      overflow: 'hidden',
-      height: 120,
+      overflow: "hidden",
+      height: 200,
+      backgroundColor: "rgba(0,0,0,0.03)",
     },
 
     imagen: {
-      width: '100%',
-      height: '100%',
-      resizeMode: 'cover',
+      width: "100%",
+      height: "100%",
+      resizeMode: "contain",
     },
 
     imagenContador: {
-      position: 'absolute',
+      position: "absolute",
       top: 8,
       right: 8,
-      backgroundColor: 'rgba(0,0,0,0.6)',
+      backgroundColor: "rgba(0,0,0,0.6)",
       paddingHorizontal: 8,
       paddingVertical: 4,
       borderRadius: 5,
     },
 
     imagenContadorTexto: {
-      color: 'white',
+      color: "white",
       fontSize: 12,
-      fontWeight: 'bold',
+      fontWeight: "bold",
     },
 
     audioContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: isDark ? colors.primary + '20' : colors.primary + '10',
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: isDark ? colors.primary + "20" : colors.primary + "10",
       padding: 12,
       borderRadius: 10,
       gap: 12,
@@ -359,42 +371,42 @@ function buildStyles(colors: any, isDark: boolean) {
       width: 40,
       height: 40,
       borderRadius: 20,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     audioInfo: {
       flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
+      flexDirection: "row",
+      alignItems: "center",
       gap: 8,
     },
 
     audioTexto: {
       fontSize: 13,
-      fontWeight: '600',
+      fontWeight: "600",
       color: colors.text,
     },
 
     estadoVacio: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
     },
 
     iconoFondoVacio: {
       width: 80,
       height: 80,
       borderRadius: 40,
-      backgroundColor: isDark ? colors.surfaceSubtle : '#f1f5f9',
-      justifyContent: 'center',
-      alignItems: 'center',
+      backgroundColor: isDark ? colors.surfaceSubtle : "#f1f5f9",
+      justifyContent: "center",
+      alignItems: "center",
       marginBottom: 15,
     },
 
     textoVacio: {
       fontSize: 20,
-      fontWeight: 'bold',
+      fontWeight: "bold",
       color: colors.textSecondary,
       marginBottom: 8,
     },
@@ -402,7 +414,7 @@ function buildStyles(colors: any, isDark: boolean) {
     subtextoVacio: {
       fontSize: 14,
       color: colors.textTertiary,
-      textAlign: 'center',
+      textAlign: "center",
       paddingHorizontal: 40,
     },
 
@@ -412,13 +424,13 @@ function buildStyles(colors: any, isDark: boolean) {
       backgroundColor: colors.surface,
       borderTopWidth: 1,
       borderTopColor: colors.border,
-      alignItems: 'center',
+      alignItems: "center",
     },
 
     footerTexto: {
       fontSize: 12,
       color: colors.textSecondary,
-      fontWeight: '500',
+      fontWeight: "500",
     },
   });
 }
