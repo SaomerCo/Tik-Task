@@ -349,21 +349,21 @@ const apuntesFiltrados = apuntesGlobales.filter((apunte: any) => {
             />
 
             <View style={s.busquedaContainer}>
-    <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
-    <TextInput
-        style={s.inputBusqueda}
-        placeholder="Buscar notas por palabra clave..."
-        value={textoBusqueda}
-        onChangeText={setTextoBusqueda}
-        placeholderTextColor={colors.textSecondary}
-    />
-
-    {textoBusqueda.length > 0 && (
-        <TouchableOpacity onPress={() => setTextoBusqueda('')}>
-            <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-    )}
-</View>
+                <Ionicons name="search-outline" size={20} color={colors.textSecondary} />
+                <TextInput
+                    style={s.inputBusqueda}
+                    placeholder="Buscar notas por palabra clave..."
+                    value={textoBusqueda}
+                    onChangeText={setTextoBusqueda}
+                    placeholderTextColor={colors.textSecondary}
+                />
+                
+                {textoBusqueda.length > 0 && (
+                    <TouchableOpacity onPress={() => setTextoBusqueda('')}>
+                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                )}
+            </View>
 
 
             <ScrollView style={s.container} showsVerticalScrollIndicator={false} removeClippedSubviews={false}>
