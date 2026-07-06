@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-
+//hola, comentario
 interface BienvenidaProps {
     onCompletado: (nombre: string) => void;
 }
