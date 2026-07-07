@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import Encabezado from '../../components/Encabezado';
@@ -29,6 +29,7 @@ export default function ApuntesScreen() {
     const [contenidoNota, setContenidoNota] = useState('');
     const [ramoVinculadoId, setRamoVinculadoId] = useState<string>('general');
     const [imagenesNota, setImagenesNota] = useState<string[]>([]);
+    const [edicionHabilitada, setEdicionHabilitada] = useState(false);
 
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [audioURI, setAudioURI] = useState<string | null>(null);
@@ -182,6 +183,7 @@ export default function ApuntesScreen() {
         setDuracionGrabacion(0);
         setRamoVinculadoId(filtroActual !== 'todos' ? filtroActual : 'general');
         setMostrarDropdown(false);
+        setEdicionHabilitada(true);
         setModalVisible(true);
     };
 
@@ -194,7 +196,13 @@ export default function ApuntesScreen() {
         setAudioURI(apunte.audio || null); 
         setDuracionGrabacion(0);
         setMostrarDropdown(false);
+        setEdicionHabilitada(false);
         setModalVisible(true);
+    };
+
+    const cerrarModal = () => {
+        setModalVisible(false);
+        setEdicionHabilitada(false);
     };
 
     async function startRecording() {
@@ -399,14 +407,22 @@ export default function ApuntesScreen() {
                 <Ionicons name="add" size={30} color="white" />
             </TouchableOpacity>
 
-            <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+            <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={cerrarModal}>
                 <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.modalOverlay}>
                     <View style={s.modalContent}>
                         <View style={s.modalHeaderRow}>
                             <Text style={s.modalTitulo}>{notaEditandoId ? 'Editar Apunte' : 'Nuevo Apunte'}</Text>
-                            <TouchableOpacity onPress={() => setModalVisible(false)}>
-                                <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
-                            </TouchableOpacity>
+                            <View style={s.modalHeaderActions}>
+                                {notaEditandoId ? (
+                                    <TouchableOpacity style={s.btnEditarTexto} onPress={() => setEdicionHabilitada((prev) => !prev)}>
+                                        <Ionicons name={edicionHabilitada ? 'lock-open-outline' : 'create-outline'} size={16} color={colors.primary} />
+                                        <Text style={s.btnEditarTextoTexto}>{edicionHabilitada ? 'Edición activa' : 'Editar texto'}</Text>
+                                    </TouchableOpacity>
+                                ) : null}
+                                <TouchableOpacity onPress={cerrarModal}>
+                                    <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -441,6 +457,7 @@ export default function ApuntesScreen() {
                                     value={tituloNota}
                                     onChangeText={setTituloNota}
                                     placeholderTextColor={colors.textSecondary}
+                                    editable={edicionHabilitada}
                                 />
                                 <TextInput
                                     style={s.inputContenidoArea}
@@ -450,7 +467,11 @@ export default function ApuntesScreen() {
                                     multiline={true}
                                     textAlignVertical="top"
                                     placeholderTextColor={colors.textSecondary}
+                                    editable={edicionHabilitada}
                                 />
+                                {!edicionHabilitada && notaEditandoId ? (
+                                    <Text style={s.infoEdicion}>Toca “Editar texto” para modificar el contenido de este apunte.</Text>
+                                ) : null}
                             </View>
 
                             {imagenesNota.length > 0 && (
@@ -556,7 +577,11 @@ function buildStyles(colors: any, isDark: boolean) {
         modalOverlay: { flex: 1, backgroundColor: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
         modalContent: { backgroundColor: colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 25, height: '85%' },
         modalHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+        modalHeaderActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
         modalTitulo: { fontSize: 22, fontWeight: 'bold', color: colors.text },
+        btnEditarTexto: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderColor: colors.border },
+        btnEditarTextoTexto: { marginLeft: 4, fontSize: 12, fontWeight: '600', color: colors.primary },
+        infoEdicion: { fontSize: 12, color: colors.textSecondary, marginBottom: 10, marginTop: -8 },
 
         label: { fontSize: 14, fontWeight: 'bold', color: colors.textSecondary, marginBottom: 8 },
         dropdownButton: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isDark ? colors.background : '#f1f5f9', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: isDark ? colors.border : 'transparent' },
