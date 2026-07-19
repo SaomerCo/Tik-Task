@@ -5,10 +5,11 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { TabProvider } from '../../context/TabContext';
 import { useTheme } from '../../context/ThemeContext';
 import ApuntesScreen from './apuntes';
+import BusquedaScreen from './busqueda';
 import ScrolleoScreen from './scrolleo';
 
 export default function TabLayout() {
-  const [activeTab, setActiveTab] = useState<'scrolleo' | 'apuntes'>('scrolleo');
+  const [activeTab, setActiveTab] = useState<'scrolleo' | 'apuntes' | 'busqueda'>('scrolleo');
   const { colors } = useTheme();
 
   const s = buildStyles(colors);
@@ -20,6 +21,7 @@ export default function TabLayout() {
         <View style={s.content}>
           {activeTab === 'scrolleo' && <ScrolleoScreen />}
           {activeTab === 'apuntes' && <ApuntesScreen />}
+          {activeTab === 'busqueda' && <BusquedaScreen />}
         </View>
 
         {/* Barra de navegación inferior */}
@@ -43,6 +45,17 @@ export default function TabLayout() {
               name={activeTab === 'apuntes' ? 'document-text' : 'document-text-outline'}
               size={24}
               color={activeTab === 'apuntes' ? colors.primary : colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[s.navItem, activeTab === 'busqueda' && s.navItemActive]}
+            onPress={() => setActiveTab('busqueda')}
+          >
+            <Ionicons
+              name={activeTab === 'busqueda' ? 'search' : 'search-outline'}
+              size={24}
+              color={activeTab === 'busqueda' ? colors.primary : colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
