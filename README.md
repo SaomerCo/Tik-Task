@@ -15,4 +15,4 @@ Miembros del equipo:
 -Felipe Diaz
 -Saoud Ahmed
 -Eddynson Tola
--Jose Yampara
+-José Yampara
