@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface EncabezadoProps {
@@ -9,9 +9,10 @@ interface EncabezadoProps {
     icono: keyof typeof Ionicons.glyphMap;
     colorActivo?: string;
     label?: string;
+    imageSource?: any;
 }
 
-export default function Encabezado({ titulo, subtitulo, icono, colorActivo, label }: EncabezadoProps) {
+export default function Encabezado({ titulo, subtitulo, icono, colorActivo, label, imageSource }: EncabezadoProps) {
     const { colors, isDark } = useTheme();
 
     // Usamos el color primario si no se pasa uno específico
@@ -21,7 +22,11 @@ export default function Encabezado({ titulo, subtitulo, icono, colorActivo, labe
     return (
         <View style={s.container}>
             <View style={s.textContainer}>
-                <Text style={s.title}>{titulo}</Text>
+                {imageSource ? (
+                    <Image source={imageSource} style={s.logoImage} resizeMode="contain" />
+                ) : (
+                    <Text style={s.title}>{titulo}</Text>
+                )}
                 <Text style={s.subtitle}>{subtitulo}</Text>
             </View>
 
@@ -57,6 +62,13 @@ function buildStyles(colors: any, isDark: boolean, themeColor: string) {
             color: colors.text,
             letterSpacing: -1, // Letras más juntas (estilo moderno)
             marginBottom: 4,
+        },
+        logoImage: {
+            width: 100,
+            height: 36,
+            marginBottom: 4,
+            backgroundColor: '#ffffff',
+            borderRadius: 10,
         },
         subtitle: {
             fontSize: 15,
