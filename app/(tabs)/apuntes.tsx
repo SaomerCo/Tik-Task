@@ -326,10 +326,11 @@ export default function ApuntesScreen() {
 
             <Encabezado
                 label="BIBLIOTECA"
-                titulo="tik-task"
+                titulo=""
                 subtitulo="Ideas y resúmenes"
                 icono="document-text"
                 colorActivo={colors.danger}
+                imageSource={require('../../assets/images/icon.png')}
             />
 
 
